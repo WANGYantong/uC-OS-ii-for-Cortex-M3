@@ -5,11 +5,13 @@ static OS_STK Task2_stack[TASKSTACK];
 
 int main(void)
 {
+    char* s_task1="Freqchip_Shenzhen";
+    char* s_task2="Freqchip_Shanghai";
+
 	DEV_HardwareInit();
 	OSInit();
-
-	OSTaskCreate(Task1, (void *) NULL, &Task1_stack[TASKSTACK - 1], 2);
-	OSTaskCreate(Task2, (void *) NULL, &Task2_stack[TASKSTACK - 1], 3);
+	OSTaskCreate(Task1, s_task1, &Task1_stack[TASKSTACK - 1], 2);
+	OSTaskCreate(Task2, s_task2, &Task2_stack[TASKSTACK - 1], 3);
 
 	OSStart();
 
@@ -18,21 +20,17 @@ int main(void)
 
 void Task1(void *p_arg)
 {
-	(void) p_arg;
-
 	while (1) {
 		OSTimeDly(1000);
-		printf("Task 1 is running!");
+		printf("Task 1 is running,location: %s!",(char *)p_arg);
 		printf("\n");
 	}
 }
 
 void Task2(void *p_arg)
 {
-	(void) p_arg;
-
 	while (1) {
-		printf("Task 2 is running!");
+		printf("Task 2 is running,location: %s!",(char *)p_arg);
 		printf("\n");
 		OSTimeDly(1000);
 	}
