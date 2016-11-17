@@ -2,103 +2,123 @@
 
 INT8U  err;
 OS_EVENT* Str_Q;
+OS_EVENT* Node1_Semp;
+OS_EVENT* Node2_Semp;
+OS_EVENT* Node3_Semp;
+
+
 void *MagGrp[N_MESSAGES];
 char *buf1;
 char *buf2;
 char *buf3;
 
-static OS_STK Task1_stack[TASKSTACK];
-static OS_STK Task2_stack[TASKSTACK];
-static OS_STK Task3_stack[TASKSTACK];
-static OS_STK Task4_stack[TASKSTACK];
+char *msg1="package type: To Node 1";
+char *msg2="package type: To Node 2";
+char *msg3="package type: To Node 3";
+char *msg_broadcast="package type: Broadcast!";
 
 
-char *food1="驴肉火烧";
-char *food2="肉夹馍";
-char *food3="猪肉炖粉条";
-char *food4="酱牛肉";
-char *food5="炒河粉";
-char *food6="卤肉饭";
+static OS_STK Node1_stack[TASKSTACK];
+static OS_STK Node2_stack[TASKSTACK];
+static OS_STK Node3_stack[TASKSTACK];
+static OS_STK Gateway_stack[TASKSTACK];
 
 int main(void)
 {
 	DEV_HardwareInit();
     OSInit();
+
     Str_Q=OSQCreate(&MagGrp[0], (INT16U)N_MESSAGES);
-	  OSTaskCreate(Customer1, (void*)NULL, &Task1_stack[TASKSTACK - 1], 2);
-    OSTaskCreate(Customer2, (void*)NULL, &Task2_stack[TASKSTACK - 1], 3);
-    OSTaskCreate(Customer3, (void*)NULL, &Task3_stack[TASKSTACK - 1], 4);
-	  OSTaskCreate(Cook, (void*)NULL, &Task4_stack[TASKSTACK - 1], 5);
+    Node1_Semp=OSSemCreate(0);
+    Node2_Semp=OSSemCreate(0);
+    Node3_Semp=OSSemCreate(0);
+
+	OSTaskCreate(Node1, (void*)NULL, &Node1_stack[TASKSTACK - 1], 3);
+    OSTaskCreate(Node2, (void*)NULL, &Node2_stack[TASKSTACK - 1], 4);
+    OSTaskCreate(Node3, (void*)NULL, &Node3_stack[TASKSTACK - 1], 5);
+	OSTaskCreate(Gateway, (void*)NULL, &Gateway_stack[TASKSTACK - 1], 6);
 
 	OSStart();
 
 	return 0;
 }
 
-void Customer1(void* p_arg)
+void Node1(void* p_arg)
 {
     while(1)
-        {
-				printf("\r\n\\11111111111111111111111111111\\\r\n");
-        printf("\r\n顾客1来了\r\n");
-        buf1=(char*)OSQPend(Str_Q, 0, &err);
-        printf("\r\n顾客1吃的是:%s\r\n",buf1);
-        printf("\r\n顾客1吃饱了，走了\r\n");
-				printf("\r\n\\11111111111111111111111111111\\\r\n");
+    {
+        OSSemPend(Node1_Semp, 0, &err);
+        printf("\r\n Node 1 is active");
+        buf1=OSQPend(Str_Q, 0, &err);
+        printf("\r\n Node 1: get msg: %s",buf1);
+        printf("\r\n Node 1: Time is %5d", OSTimeGet());
+        printf("\r\n Node 1: sleeping");
         OSTimeDly(4000);
     }
 }
 
-void Customer2(void* p_arg)
+void Node2(void* p_arg)
 {
     while(1)
-        {
-			  printf("\r\n\\22222222222222222222222222222\\\r\n");
-        printf("\r\n顾客2来了\r\n");
-        buf2=(char*)OSQPend(Str_Q, 0, &err);
-        printf("\r\n顾客2吃的是:%s\r\n",buf2);
-        printf("\r\n顾客2吃饱了，走了\r\n");
-				printf("\r\n\\22222222222222222222222222222\\\r\n");
+    {
+        OSSemPend(Node2_Semp, 0, &err);
+        printf("\r\n Node 2 is active");
+        buf2=OSQPend(Str_Q, 0, &err);
+        printf("\r\n Node 2: get msg: %s",buf2);
+        printf("\r\n Node 2: Time is %5d", OSTimeGet());
+        printf("\r\n Node 2: sleeping");
         OSTimeDly(2000);
     }
-
 }
 
-void Customer3(void* p_arg)
+void Node3(void* p_arg)
 {
     while(1)
-        {
-				printf("\r\n\\33333333333333333333333333333\\\r\n");
-        printf("\r\n顾客3来了\r\n");
-        buf3=(char*)OSQPend(Str_Q, 0, &err);
-        printf("\r\n顾客3吃的是:%s\r\n",buf3);
-        printf("\r\n顾客3吃饱了，走了\r\n");
-				printf("\r\n\\33333333333333333333333333333\\\r\n");
+    {
+        OSSemPend(Node3_Semp, 0, &err);
+        printf("\r\n Node 3 is active");
+        buf3=OSQPend(Str_Q, 0, &err);
+        printf("\r\n Node 3: get msg: %s",buf3);
+        printf("\r\n Node 3: Time is %5d", OSTimeGet());
+        printf("\r\n Node 3: sleeping");
         OSTimeDly(1000);
     }
-
 }
 
-void Cook(void* p_arg)
+void Gateway(void* p_arg)
 {
+    static INT8U time;
     while(1)
+    {
+        printf("\r\n/*********************************/");
+				printf("\r\n Master is active.");
+        printf("\r\n Master:Wake up! Node 1.");
+        OSSemPost(Node1_Semp);
+        printf("\r\n Master:Wake up! Node 2.");
+        OSSemPost(Node2_Semp);
+        printf("\r\n Master:Wake up! Node 3.");
+        OSSemPost(Node3_Semp);
+
+        printf("\r\n Master is transporting msg...");
+        if(time==0)
         {
-					  printf("\r\n\\**************************\\\r\n");
-            printf("\r\n厨师开始做饭\r\n");
-            printf("\r\n第一道菜: %s\r\n",food1);
-            OSQPost(Str_Q, food1);
-            printf("\r\n第二道菜: %s\r\n",food2);
-            OSQPost(Str_Q, food2);
-            printf("\r\n第三道菜: %s\r\n",food3);
-            OSQPost(Str_Q, food3);
-            printf("\r\n第四道菜: %s\r\n",food4);
-            OSQPost(Str_Q, food4);
-            printf("\r\n第五道菜: %s\r\n",food5);
-            OSQPost(Str_Q, food5);
-            printf("\r\n第六道菜: %s\r\n",food6);
-            OSQPost(Str_Q, food6);
-            printf("\r\n厨师休息\r\n");
-					  printf("\r\n\\**************************\\\r\n");
-            OSTimeDly(12000);
+            OSQPost(Str_Q, msg_broadcast);
+            OSQPost(Str_Q, msg_broadcast);
+            OSQPost(Str_Q, msg_broadcast);
+            time++;
+        }
+        else
+        {
+            OSQPost(Str_Q, msg1);
+            OSQPost(Str_Q, msg2);
+            OSQPost(Str_Q, msg3);
+            time=0;
+        }
+
+        printf("\r\n Master: sleeping");
+				printf("\r\n/*********************************/");
+				printf("\r\n");
+        OSTimeDly(8000);
+
     }
 }
