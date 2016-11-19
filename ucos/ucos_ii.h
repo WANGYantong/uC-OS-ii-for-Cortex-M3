@@ -209,9 +209,10 @@ extern "C" {
 *********************************************************************************************************
 */
 #define  OS_TASK_OPT_NONE          0x0000u  /* NO option selected                                      */
-#define  OS_TASK_OPT_STK_CHK       0x0001u  /* Enable stack checking for the task                      */
-#define  OS_TASK_OPT_STK_CLR       0x0002u  /* Clear the stack when the task is create                 */
-#define  OS_TASK_OPT_SAVE_FP       0x0004u  /* Save the contents of any floating-point registers       */
+#define  OS_TASK_OPT_STK_CHK       0x0001u  /* 任务建立时允许任务栈检验 Enable stack checking for the task*/
+#define  OS_TASK_OPT_STK_CLR       0x0002u  /* 任务建立时任务站清0 Clear the stack when the task is create*/
+#define  OS_TASK_OPT_SAVE_FP       0x0004u  /* 通知OSTaskCreateExt任务要做浮点运算,在任务切换时保存浮点寄存器中的内容*/
+                                            /* Save the contents of any floating-point registers*/
 
 /*
 *********************************************************************************************************
@@ -527,71 +528,71 @@ typedef struct os_stk_data {
 /*$PAGE*/
 /*
 *********************************************************************************************************
-*                                          TASK CONTROL BLOCK
+*                                     TASK CONTROL BLOCK  任务控制块
 *********************************************************************************************************
 */
 
 typedef struct os_tcb {
-    OS_STK          *OSTCBStkPtr;           /* Pointer to current top of stack                         */
+    OS_STK          *OSTCBStkPtr;           /* 指向任务栈顶的指针 Pointer to current top of stack   */
 
 #if OS_TASK_CREATE_EXT_EN > 0u
-    void            *OSTCBExtPtr;           /* Pointer to user definable data for TCB extension        */
-    OS_STK          *OSTCBStkBottom;        /* Pointer to bottom of stack                              */
-    INT32U           OSTCBStkSize;          /* Size of task stack (in number of stack elements)        */
-    INT16U           OSTCBOpt;              /* Task options as passed by OSTaskCreateExt()             */
-    INT16U           OSTCBId;               /* Task ID (0..65535)                                      */
+    void            *OSTCBExtPtr;           /* 指向用户定义的TCB扩展的指针 Pointer to user definable data for TCB extension */
+    OS_STK          *OSTCBStkBottom;        /* 指向栈底的指针 Pointer to bottom of stack               */
+    INT32U           OSTCBStkSize;          /* 任务栈的容量(以堆栈指针宽度为单位)Size of task stack (in number of stack elements)*/
+    INT16U           OSTCBOpt;              /* 传递给OSTaskCreateExt()的选择项 Task options as passed by OSTaskCreateExt() */
+    INT16U           OSTCBId;               /* 任务标识码(0~65535) Task ID (0..65535)                  */
 #endif
 
-    struct os_tcb   *OSTCBNext;             /* Pointer to next     TCB in the TCB list                 */
-    struct os_tcb   *OSTCBPrev;             /* Pointer to previous TCB in the TCB list                 */
+    struct os_tcb   *OSTCBNext;             /* 指向下一个TCB Pointer to next     TCB in the TCB list                 */
+    struct os_tcb   *OSTCBPrev;             /* 指向上一个TCB Pointer to previous TCB in the TCB list                 */
 
 #if (OS_EVENT_EN)
-    OS_EVENT        *OSTCBEventPtr;         /* Pointer to          event control block                 */
+    OS_EVENT        *OSTCBEventPtr;         /* 指向事件控制块 Pointer to         event control block                 */
 #endif
 
 #if (OS_EVENT_EN) && (OS_EVENT_MULTI_EN > 0u)
-    OS_EVENT       **OSTCBEventMultiPtr;    /* Pointer to multiple event control blocks                */
+    OS_EVENT       **OSTCBEventMultiPtr;    /* 指向多事件控制块 Pointer to multiple event control blocks             */
 #endif
 
 #if ((OS_Q_EN > 0u) && (OS_MAX_QS > 0u)) || (OS_MBOX_EN > 0u)
-    void            *OSTCBMsg;              /* Message received from OSMboxPost() or OSQPost()         */
+    void            *OSTCBMsg;              /* 指向传递给消息邮箱或者消息队列的消息指针 Message received from OSMboxPost() or OSQPost() */
 #endif
 
 #if (OS_FLAG_EN > 0u) && (OS_MAX_FLAGS > 0u)
 #if OS_TASK_DEL_EN > 0u
-    OS_FLAG_NODE    *OSTCBFlagNode;         /* Pointer to event flag node                              */
+    OS_FLAG_NODE    *OSTCBFlagNode;         /* 指向事件标志节点的指针 Pointer to event flag node                     */
 #endif
-    OS_FLAGS         OSTCBFlagsRdy;         /* Event flags that made task ready to run                 */
+    OS_FLAGS         OSTCBFlagsRdy;         /* 事件标志组中使等待任务进入就绪状态的标志 Event flags that made task ready to run         */
 #endif
 
-    INT32U           OSTCBDly;              /* Nbr ticks to delay task or, timeout waiting for event   */
-    INT8U            OSTCBStat;             /* Task      status                                        */
-    INT8U            OSTCBStatPend;         /* Task PEND status                                        */
-    INT8U            OSTCBPrio;             /* Task priority (0 == highest)                            */
-
+    INT32U           OSTCBDly;              /* 任务延时或等待超时的时钟节拍数   Nbr ticks to delay task or, timeout waiting for event   */
+    INT8U            OSTCBStat;             /* 任务状态字 Task      status                                        */
+    INT8U            OSTCBStatPend;         /* 任务挂起状态字 Task PEND status                                    */
+    INT8U            OSTCBPrio;             /* 任务优先级(0最高) Task priority (0 == highest)                     */
+/*下面四个是加速查找任务优先级的变量*/
     INT8U            OSTCBX;                /* Bit position in group  corresponding to task priority   */
     INT8U            OSTCBY;                /* Index into ready table corresponding to task priority   */
     OS_PRIO          OSTCBBitX;             /* Bit mask to access bit position in ready table          */
     OS_PRIO          OSTCBBitY;             /* Bit mask to access bit position in ready group          */
 
 #if OS_TASK_DEL_EN > 0u
-    INT8U            OSTCBDelReq;           /* Indicates whether a task needs to delete itself         */
+    INT8U            OSTCBDelReq;           /* 指示任务是否需要自删除 Indicates whether a task needs to delete itself */
 #endif
 
 #if OS_TASK_PROFILE_EN > 0u
-    INT32U           OSTCBCtxSwCtr;         /* Number of time the task was switched in                 */
-    INT32U           OSTCBCyclesTot;        /* Total number of clock cycles the task has been running  */
-    INT32U           OSTCBCyclesStart;      /* Snapshot of cycle counter at start of task resumption   */
-    OS_STK          *OSTCBStkBase;          /* Pointer to the beginning of the task stack              */
-    INT32U           OSTCBStkUsed;          /* Number of bytes used from the stack                     */
+    INT32U           OSTCBCtxSwCtr;         /* 任务切换过来的时刻 Number of time the task was switched in        */
+    INT32U           OSTCBCyclesTot;        /* 任务运行已经占用的总时长 Total number of clock cycles the task has been running  */
+    INT32U           OSTCBCyclesStart;      /* 任务重新运行后的时长 Snapshot of cycle counter at start of task resumption   */
+    OS_STK          *OSTCBStkBase;          /* 指向任务栈起始位置的指针 Pointer to the beginning of the task stack          */
+    INT32U           OSTCBStkUsed;          /* 栈中已经使用的字节长度 Number of bytes used from the stack                   */
 #endif
 
 #if OS_TASK_NAME_EN > 0u
-    INT8U           *OSTCBTaskName;
+    INT8U           *OSTCBTaskName;         /*任务名*/
 #endif
 
 #if OS_TASK_REG_TBL_SIZE > 0u
-    INT32U           OSTCBRegTbl[OS_TASK_REG_TBL_SIZE];
+    INT32U           OSTCBRegTbl[OS_TASK_REG_TBL_SIZE]; /*疑似保存任务寄存器的数组？*/
 #endif
 } OS_TCB;
 

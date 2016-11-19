@@ -562,38 +562,38 @@ INT16U OSEventPendMulti(OS_EVENT ** pevents_pend,
 
 void OSInit(void)
 {
-	OSInitHookBegin();	/* Call port specific initialization code   */
+	OSInitHookBegin();	/* 调用特殊定义的初始化代码 Call port specific initialization code   */
 
-	OS_InitMisc();		/* Initialize miscellaneous variables       */
+	OS_InitMisc();		/* 初始化变量Initialize miscellaneous variables       */
 
-	OS_InitRdyList();	/* Initialize the Ready List                */
+	OS_InitRdyList();	/* 就绪队列初始化 Initialize the Ready List                */
 
-	OS_InitTCBList();	/* Initialize the free list of OS_TCBs      */
+	OS_InitTCBList();	/* TCB队列初始化 Initialize the free list of OS_TCBs      */
 
-	OS_InitEventList();	/* Initialize the free list of OS_EVENTs    */
+	OS_InitEventList();	/* 事件控制块队列初始化 Initialize the free list of OS_EVENTs    */
 
 #if (OS_FLAG_EN > 0u) && (OS_MAX_FLAGS > 0u)
-	OS_FlagInit();		/* Initialize the event flag structures     */
+	OS_FlagInit();		/* 标志控制块队列初始化 Initialize the event flag structures     */
 #endif
 
 #if (OS_MEM_EN > 0u) && (OS_MAX_MEM_PART > 0u)
-	OS_MemInit();		/* Initialize the memory manager            */
+	OS_MemInit();		/* 存储控制块队列初始化 Initialize the memory manager            */
 #endif
 
 #if (OS_Q_EN > 0u) && (OS_MAX_QS > 0u)
-	OS_QInit();		/* Initialize the message queue structures  */
+	OS_QInit();		/* 消息队列控制块初始化 Initialize the message queue structures  */
 #endif
 
-	OS_InitTaskIdle();	/* Create the Idle Task                     */
+	OS_InitTaskIdle();	/*空闲任务初始化 Create the Idle Task                     */
 #if OS_TASK_STAT_EN > 0u
-	OS_InitTaskStat();	/* Create the Statistic Task                */
+	OS_InitTaskStat();	/*统计任务初始化 Create the Statistic Task                */
 #endif
 
 #if OS_TMR_EN > 0u
-	OSTmr_Init();		/* Initialize the Timer Manager             */
+	OSTmr_Init();		/*计数器管理初始化 Initialize the Timer Manager             */
 #endif
 
-	OSInitHookEnd();	/* Call port specific init. code            */
+	OSInitHookEnd();	/*用户自定义的钩子函数 Call port specific init. code            */
 
 #if OS_DEBUG_EN > 0u
 	OSDebugInit();
@@ -728,23 +728,23 @@ void OSSafetyCriticalStart(void)
 *********************************************************************************************************
 */
 
-#if OS_SCHED_LOCK_EN > 0u
+#if OS_SCHED_LOCK_EN > 0u       //开启了调度锁的功能
 void OSSchedLock(void)
 {
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register           */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //采用第三种方式开关中断,需要定义cpu_sr来保存中断状态
 #endif
 
 
 
-	if (OSRunning == OS_TRUE) {	/* Make sure multitasking is running                  */
-		OS_ENTER_CRITICAL();
-		if (OSIntNesting == 0u) {	/* Can't call from an ISR                             */
-			if (OSLockNesting < 255u) {	/* Prevent OSLockNesting from wrapping back to 0      */
-				OSLockNesting++;	/* Increment lock nesting level                       */
+	if (OSRunning == OS_TRUE) {	/*操作系统是否运行了 Make sure multitasking is running   */
+		OS_ENTER_CRITICAL();    //要访问全局变量,关中断
+		if (OSIntNesting == 0u) {	/* 是不是在中断服务中 Can't call from an ISR                             */
+			if (OSLockNesting < 255u) {	/*锁定嵌套计数器小于255 Prevent OSLockNesting from wrapping back to 0      */
+				OSLockNesting++;	/*锁定嵌套计数器加1 Increment lock nesting level                       */
 			}
 		}
-		OS_EXIT_CRITICAL();
+		OS_EXIT_CRITICAL();     //开中断
 	}
 }
 #endif
@@ -769,19 +769,19 @@ void OSSchedLock(void)
 void OSSchedUnlock(void)
 {
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //采用第三种方式开关中断,需要定义cpu_sr来保存中断状态
 #endif
 
 
 
-	if (OSRunning == OS_TRUE) {	/* Make sure multitasking is running        */
-		OS_ENTER_CRITICAL();
-		if (OSLockNesting > 0u) {	/* Do not decrement if already 0            */
-			OSLockNesting--;	/* Decrement lock nesting level             */
-			if (OSLockNesting == 0u) {	/* See if scheduler is enabled and ...      */
-				if (OSIntNesting == 0u) {	/* ... not in an ISR                        */
-					OS_EXIT_CRITICAL();
-					OS_Sched();	/* See if a HPT is ready                    */
+	if (OSRunning == OS_TRUE) {	/*操作系统是否运行 Make sure multitasking is running        */
+		OS_ENTER_CRITICAL();    //需要访问呢全局变量,关中断
+		if (OSLockNesting > 0u) {	/*锁定嵌套计数器大于0么 Do not decrement if already 0            */
+			OSLockNesting--;	/* 锁定嵌套计数器-1 Decrement lock nesting level             */
+			if (OSLockNesting == 0u) {	/* 如果锁定嵌套计数器=0 See if scheduler is enabled and ...      */
+				if (OSIntNesting == 0u) {	/*并且不是处于中断服务 ... not in an ISR                        */
+					OS_EXIT_CRITICAL(); //开中断
+					OS_Sched();	/* 进行一次任务调度 See if a HPT is ready                    */
 				} else {
 					OS_EXIT_CRITICAL();
 				}
@@ -818,12 +818,12 @@ void OSSchedUnlock(void)
 
 void OSStart(void)
 {
-	if (OSRunning == OS_FALSE) {
-		OS_SchedNew();	/* Find highest priority's task priority number   */
-		OSPrioCur = OSPrioHighRdy;
-		OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];	/* Point to highest priority task ready to run    */
-		OSTCBCur = OSTCBHighRdy;
-		OSStartHighRdy();	/* Execute target specific code to start task     */
+	if (OSRunning == OS_FALSE) {        //内核运行了么
+		OS_SchedNew();	/* 找到准备就绪的最高优先级任务 Find highest priority's task priority number   */
+		OSPrioCur = OSPrioHighRdy;  //将其设置为当前任务优先级
+		OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];	/*找到其对应的TCB Point to highest priority task ready to run    */
+		OSTCBCur = OSTCBHighRdy;    //将其设置为当前任务TCB
+		OSStartHighRdy();	/*调动就绪的最高优先级任务启动函数 Execute target specific code to start task     */
 	}
 }
 
@@ -852,19 +852,19 @@ void OSStart(void)
 void OSStatInit(void)
 {
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register           */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //第三种方式开关中断，需要定义cpu_sr存储中断前后状态
 #endif
 
 
 
-	OSTimeDly(2u);		/* Synchronize with clock tick                        */
+	OSTimeDly(2u);		/* 同步 Synchronize with clock tick                        */
 	OS_ENTER_CRITICAL();
-	OSIdleCtr = 0uL;	/* Clear idle counter                                 */
+	OSIdleCtr = 0uL;	/* 清空空闲任务计数值 Clear idle counter                                 */
 	OS_EXIT_CRITICAL();
-	OSTimeDly(OS_TICKS_PER_SEC / 10u);	/* Determine MAX. idle counter value for 1/10 second  */
+	OSTimeDly(OS_TICKS_PER_SEC / 10u);	/* 延时0.1秒,此时空闲时间计数器也过了0.1秒 Determine MAX. idle counter value for 1/10 second  */
 	OS_ENTER_CRITICAL();
-	OSIdleCtrMax = OSIdleCtr;	/* Store maximum idle counter count in 1/10 second    */
-	OSStatRdy = OS_TRUE;
+	OSIdleCtrMax = OSIdleCtr;	/* 0.1秒作为OSIdleCtrMax Store maximum idle counter count in 1/10 second    */
+	OSStatRdy = OS_TRUE;        //统计任务就绪
 	OS_EXIT_CRITICAL();
 }
 #endif
@@ -1320,23 +1320,23 @@ static void OS_InitEventList(void)
 static void OS_InitMisc(void)
 {
 #if OS_TIME_GET_SET_EN > 0u
-	OSTime = 0uL;		/* Clear the 32-bit system clock            */
+	OSTime = 0uL;		/* 清空系统时钟 Clear the 32-bit system clock            */
 #endif
 
-	OSIntNesting = 0u;	/* Clear the interrupt nesting counter      */
-	OSLockNesting = 0u;	/* Clear the scheduling lock counter        */
+	OSIntNesting = 0u;	/* 中断嵌套层数计数器清零 Clear the interrupt nesting counter      */
+	OSLockNesting = 0u;	/* 调度锁定嵌套计数器清零 Clear the scheduling lock counter        */
 
-	OSTaskCtr = 0u;		/* Clear the number of tasks                */
+	OSTaskCtr = 0u;		/* 创建的任务数目清零 Clear the number of tasks                */
 
-	OSRunning = OS_FALSE;	/* Indicate that multitasking not started   */
+	OSRunning = OS_FALSE;	/* 内核运行标志:没运行 Indicate that multitasking not started   */
 
-	OSCtxSwCtr = 0u;	/* Clear the context switch counter         */
-	OSIdleCtr = 0uL;	/* Clear the 32-bit idle counter            */
+	OSCtxSwCtr = 0u;	/* 任务切换计数器清零 Clear the context switch counter         */
+	OSIdleCtr = 0uL;	/* 空闲计数器清零 Clear the 32-bit idle counter            */
 
 #if OS_TASK_STAT_EN > 0u
-	OSIdleCtrRun = 0uL;
-	OSIdleCtrMax = 0uL;
-	OSStatRdy = OS_FALSE;	/* Statistic task is not ready              */
+	OSIdleCtrRun = 0uL;     //一秒内空闲计数器计数值清零
+	OSIdleCtrMax = 0uL;     //空闲计数器最大速率清零
+	OSStatRdy = OS_FALSE;	/* 统计任务未就绪 Statistic task is not ready              */
 #endif
 
 #ifdef OS_SAFETY_CRITICAL_IEC61508
@@ -1362,7 +1362,7 @@ static void OS_InitRdyList(void)
 {
 	INT8U i;
 
-
+    //就绪表初始化
 	OSRdyGrp = 0u;		/* Clear the ready list                     */
 	for (i = 0u; i < OS_RDY_TBL_SIZE; i++) {
 		OSRdyTbl[i] = 0u;
@@ -1604,27 +1604,27 @@ void OS_MemCopy(INT8U * pdest, INT8U * psrc, INT16U size)
 
 void OS_Sched(void)
 {
+//采用第三种方式开关中断，定义局部变量cpu_sr来保存中断状态
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register     */
 	OS_CPU_SR cpu_sr = 0u;
 #endif
 
-
-
+    //因处理全局变量而关中断
 	OS_ENTER_CRITICAL();
-	if (OSIntNesting == 0u) {	/* Schedule only if all ISRs done and ...       */
-		if (OSLockNesting == 0u) {	/* ... scheduler is not locked                  */
-			OS_SchedNew();
-			OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
-			if (OSPrioHighRdy != OSPrioCur) {	/* No Ctx Sw if current task is highest rdy     */
+	if (OSIntNesting == 0u) {	/* 当前不处于中断服务子程序中 Schedule only if all ISRs done and ...       */
+		if (OSLockNesting == 0u) {	/* 也不处于调度上锁 ... scheduler is not locked             */
+			OS_SchedNew();      //找出准备就绪且优先级最高的任务
+			OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy]; //就绪且任务级最高的任务所对应的TCB
+			if (OSPrioHighRdy != OSPrioCur) {	/* 如果不是当前运行的任务 No Ctx Sw if current task is highest rdy     */
 #if OS_TASK_PROFILE_EN > 0u
-				OSTCBHighRdy->OSTCBCtxSwCtr++;	/* Inc. # of context switches to this task      */
+				OSTCBHighRdy->OSTCBCtxSwCtr++;	/* 任务运行时刻加1 Inc. # of context switches to this task      */
 #endif
-				OSCtxSwCtr++;	/* Increment context switch counter             */
-				OS_TASK_SW();	/* Perform a context switch                     */
+				OSCtxSwCtr++;	/* 任务切换统计计数器加1 Increment context switch counter         */
+				OS_TASK_SW();	/* 上下文切换 Perform a context switch                     */
 			}
 		}
 	}
-	OS_EXIT_CRITICAL();
+	OS_EXIT_CRITICAL();     //开中断
 }
 
 
@@ -1646,13 +1646,13 @@ void OS_Sched(void)
 
 static void OS_SchedNew(void)
 {
-#if OS_LOWEST_PRIO <= 63u	/* See if we support up to 64 tasks                   */
+#if OS_LOWEST_PRIO <= 63u	/* 如果支持64个优先级或以内 See if we support up to 64 tasks                   */
 	INT8U y;
 
 
 	y = OSUnMapTbl[OSRdyGrp];
 	OSPrioHighRdy = (INT8U) ((y << 3u) + OSUnMapTbl[OSRdyTbl[y]]);
-#else				/* We support up to 256 tasks                         */
+#else				/* 如果支持65~256个优先级 We support up to 256 tasks                         */
 	INT8U y;
 	OS_PRIO *ptbl;
 

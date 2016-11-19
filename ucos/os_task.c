@@ -39,11 +39,11 @@
 *
 * Returns    : OS_ERR_NONE            is the call was successful
 *              OS_ERR_PRIO_INVALID    if the priority you specify is higher that the maximum allowed
-*                                     (i.e. >= OS_LOWEST_PRIO)
-*              OS_ERR_PRIO_EXIST      if the new priority already exist.
+*                                     (i.e. >= OS_LOWEST_PRIO)Ô­ÓÅÏÈ¼¶»òĞÂÓÅÏÈ¼¶·Ç·¨
+*              OS_ERR_PRIO_EXIST      if the new priority already exist.ĞÂÓÅÏÈ¼¶ÒÑ¾­´æÔÚ
 *              OS_ERR_PRIO            there is no task with the specified OLD priority (i.e. the OLD task does
-*                                     not exist.
-*              OS_ERR_TASK_NOT_EXIST  if the task is assigned to a Mutex PIP.
+*                                     not exist.¾ÉÓÅÏÈ¼¶²»´æÔÚ
+*              OS_ERR_TASK_NOT_EXIST  if the task is assigned to a Mutex PIP. Èç¹ûÈÎÎñ±»·ÖÅäµ½Ò»¸ö»¥³âµÄ¼Ì³ĞÓÅÏÈ¼¶
 *********************************************************************************************************
 */
 
@@ -64,13 +64,13 @@ INT8U OSTaskChangePrio(INT8U oldprio, INT8U newprio)
 	OS_PRIO bitx_new;
 	OS_PRIO bity_old;
 	OS_PRIO bitx_old;
-#if OS_CRITICAL_METHOD == 3u
+#if OS_CRITICAL_METHOD == 3u //²ÉÓÃµÚÈıÖÖ·½Ê½¿ª¹ØÖĞ¶Ï
 	OS_CPU_SR cpu_sr = 0u;	/* Storage for CPU status register         */
 #endif
 
 
 /*$PAGE*/
-#if OS_ARG_CHK_EN > 0u
+#if OS_ARG_CHK_EN > 0u                  //È·±£ÊäÈëÓÅÏÈ¼¶ºÏ·¨
 	if (oldprio >= OS_LOWEST_PRIO) {
 		if (oldprio != OS_PRIO_SELF) {
 			return (OS_ERR_PRIO_INVALID);
@@ -81,23 +81,23 @@ INT8U OSTaskChangePrio(INT8U oldprio, INT8U newprio)
 	}
 #endif
 	OS_ENTER_CRITICAL();
-	if (OSTCBPrioTbl[newprio] != (OS_TCB *) 0) {	/* New priority must not already exist     */
+	if (OSTCBPrioTbl[newprio] != (OS_TCB *) 0) {	/* ĞÂÓÅÏÈ¼¶²»ÄÜ´æÔÚ New priority must not already exist     */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_PRIO_EXIST);
 	}
-	if (oldprio == OS_PRIO_SELF) {	/* See if changing self                    */
-		oldprio = OSTCBCur->OSTCBPrio;	/* Yes, get priority                       */
+	if (oldprio == OS_PRIO_SELF) {	/*ÊÇ²»ÊÇ¸Ä±äµ±Ç°ÈÎÎñµÄÓÅÏÈ¼¶ See if changing self                    */
+		oldprio = OSTCBCur->OSTCBPrio;	/*ÊÇ,»ñÈ¡µ±Ç°ÈÎÎñµÄÓÅÏÈ¼¶ Yes, get priority                       */
 	}
-	ptcb = OSTCBPrioTbl[oldprio];
+	ptcb = OSTCBPrioTbl[oldprio];   //»ñÈ¡ÈÎÎñµÄTCB
 	if (ptcb == (OS_TCB *) 0) {	/* Does task to change exist?              */
 		OS_EXIT_CRITICAL();	/* No, can't change its priority!          */
-		return (OS_ERR_PRIO);
+		return (OS_ERR_PRIO);   //ÈÎÎñ²»´æÔÚ
 	}
 	if (ptcb == OS_TCB_RESERVED) {	/* Is task assigned to Mutex               */
 		OS_EXIT_CRITICAL();	/* No, can't change its priority!          */
-		return (OS_ERR_TASK_NOT_EXIST);
+		return (OS_ERR_TASK_NOT_EXIST); //ÈÎÎñ±»·ÖÅä»¥³â,²»ÄÜ¸Ä±äÓÅÏÈ¼¶
 	}
-#if OS_LOWEST_PRIO <= 63u
+#if OS_LOWEST_PRIO <= 63u               //¼ÆËãĞÂµÄÓÅÏÈ¼¶ÔÚ¾ÍĞ÷±íÖĞµÄÎ»ÖÃ
 	y_new = (INT8U) (newprio >> 3u);	/* Yes, compute new TCB fields             */
 	x_new = (INT8U) (newprio & 0x07u);
 #else
@@ -107,27 +107,27 @@ INT8U OSTaskChangePrio(INT8U oldprio, INT8U newprio)
 	bity_new = (OS_PRIO) (1uL << y_new);
 	bitx_new = (OS_PRIO) (1uL << x_new);
 
-	OSTCBPrioTbl[oldprio] = (OS_TCB *) 0;	/* Remove TCB from old priority            */
-	OSTCBPrioTbl[newprio] = ptcb;	/* Place pointer to TCB @ new priority     */
+	OSTCBPrioTbl[oldprio] = (OS_TCB *) 0;	/*É¾³ıÓÅÏÈ¼¶±íÖĞ¾ÉÓÅÏÈ¼¶Î»ÖÃµÄTCB Remove TCB from old priority            */
+	OSTCBPrioTbl[newprio] = ptcb;	/*½«Æä¼Óµ½ĞÂÓÅÏÈ¼¶Î»ÖÃÉÏ Place pointer to TCB @ new priority     */
 	y_old = ptcb->OSTCBY;
 	bity_old = ptcb->OSTCBBitY;
 	bitx_old = ptcb->OSTCBBitX;
-	if ((OSRdyTbl[y_old] & bitx_old) != 0u) {	/* If task is ready make it not            */
+	if ((OSRdyTbl[y_old] & bitx_old) != 0u) {	/*´Ó¾ÉÓÅÏÈ¼¶µÄ¾ÍĞ÷±íÖĞÒÆ³ı If task is ready make it not            */
 		OSRdyTbl[y_old] &= (OS_PRIO) ~ bitx_old;
 		if (OSRdyTbl[y_old] == 0u) {
 			OSRdyGrp &= (OS_PRIO) ~ bity_old;
 		}
-		OSRdyGrp |= bity_new;	/* Make new priority ready to run          */
+		OSRdyGrp |= bity_new;	/*¼ÓÈëĞÂÓÅÏÈ¼¶µÄ¾ÍĞ÷±í Make new priority ready to run          */
 		OSRdyTbl[y_new] |= bitx_new;
 	}
 #if (OS_EVENT_EN)
 	pevent = ptcb->OSTCBEventPtr;
 	if (pevent != (OS_EVENT *) 0) {
-		pevent->OSEventTbl[y_old] &= (OS_PRIO) ~ bitx_old;	/* Remove old task prio from wait list     */
+		pevent->OSEventTbl[y_old] &= (OS_PRIO) ~ bitx_old;	/*ÔÚµÈ´ı±íÖĞ½«¾ÉÓÅÏÈ¼¶ÒÆ³ı Remove old task prio from wait list     */
 		if (pevent->OSEventTbl[y_old] == 0u) {
 			pevent->OSEventGrp &= (OS_PRIO) ~ bity_old;
 		}
-		pevent->OSEventGrp |= bity_new;	/* Add    new task prio to   wait list     */
+		pevent->OSEventGrp |= bity_new;	/*¼ÓÈëµÈ´ı±íÖĞĞÂÓÅÏÈ¼¶Î»ÖÃ Add    new task prio to   wait list     */
 		pevent->OSEventTbl[y_new] |= bitx_new;
 	}
 #if (OS_EVENT_MULTI_EN > 0u)
@@ -148,14 +148,14 @@ INT8U OSTaskChangePrio(INT8U oldprio, INT8U newprio)
 #endif
 #endif
 
-	ptcb->OSTCBPrio = newprio;	/* Set new task priority                   */
+	ptcb->OSTCBPrio = newprio;	/*ÉèÖÃĞÂÈÎÎñÓÅÏÈ¼¶ Set new task priority                   */
 	ptcb->OSTCBY = y_new;
 	ptcb->OSTCBX = x_new;
 	ptcb->OSTCBBitY = bity_new;
 	ptcb->OSTCBBitX = bitx_new;
 	OS_EXIT_CRITICAL();
 	if (OSRunning == OS_TRUE) {
-		OS_Sched();	/* Find new highest priority task          */
+		OS_Sched();	/*ÖØĞÂµ÷¶È Find new highest priority task          */
 	}
 	return (OS_ERR_NONE);
 }
@@ -167,9 +167,9 @@ INT8U OSTaskChangePrio(INT8U oldprio, INT8U newprio)
 *
 * Description: This function is used to have uC/OS-II manage the execution of a task.  Tasks can either
 *              be created prior to the start of multitasking or by a running task.  A task cannot be
-*              created by an ISR.
+*              created by an ISR.ÈÎÎñ²»ÄÜ±»ÖĞ¶Ï·şÎñ³ÌĞò´´½¨!!
 *
-* Arguments  : task     is a pointer to the task's code
+* Arguments  : task     is a pointer to the task's code  ÈÎÎñ´úÂëÖ¸Õë
 *
 *              p_arg    is a pointer to an optional data area which can be used to pass parameters to
 *                       the task when the task first executes.  Where the task is concerned it thinks
@@ -181,23 +181,23 @@ INT8U OSTaskChangePrio(INT8U oldprio, INT8U newprio)
 *                                   Task code;
 *                               }
 *                           }
-*
+*                       ÈÎÎñÖ´ĞĞÊ±´«µİ¸øÈÎÎñµÄ²ÎÊıµÄÖ¸Õë
 *              ptos     is a pointer to the task's top of stack.  If the configuration constant
 *                       OS_STK_GROWTH is set to 1, the stack is assumed to grow downward (i.e. from high
 *                       memory to low memory).  'pstk' will thus point to the highest (valid) memory
 *                       location of the stack.  If OS_STK_GROWTH is set to 0, 'pstk' will point to the
 *                       lowest memory location of the stack and the stack will grow with increasing
 *                       memory locations.
-*
+*                       ·ÖÅä¸øÈÎÎñ¶ÑÕ»µÄÕ»¶¥Ö¸Õë
 *              prio     is the task's priority.  A unique priority MUST be assigned to each task and the
 *                       lower the number, the higher the priority.
-*
-* Returns    : OS_ERR_NONE             if the function was successful.
-*              OS_PRIO_EXIT            if the task priority already exist
+*                       ·ÖÅä¸øÈÎÎñµÄÓÅÏÈ¼¶
+* Returns    : OS_ERR_NONE             if the function was successful.´´½¨ÈÎÎñ³É¹¦
+*              OS_PRIO_EXIT            if the task priority already exist Ö¸¶¨µÄÓÅÏÈ¼¶ÒÑ¾­±»Õ¼ÓÃ
 *                                      (each task MUST have a unique priority).
 *              OS_ERR_PRIO_INVALID     if the priority you specify is higher that the maximum allowed
-*                                      (i.e. >= OS_LOWEST_PRIO)
-*              OS_ERR_TASK_CREATE_ISR  if you tried to create a task from an ISR.
+*                                      (i.e. >= OS_LOWEST_PRIO)Ö¸¶¨µÄÓÅÏÈ¼¶´óÓÚOS_LOWEST_PRIO
+*              OS_ERR_TASK_CREATE_ISR  if you tried to create a task from an ISR.ÔÚÖĞ¶Ï·şÎñ³ÌĞòÖĞ´´½¨ÈÎÎñ
 *********************************************************************************************************
 */
 
@@ -207,7 +207,7 @@ INT8U OSTaskCreate(void (*task) (void *p_arg), void *p_arg, OS_STK * ptos, INT8U
 	OS_STK *psp;
 	INT8U err;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register               */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //²ÉÓÃµÚÈıÖÖ·½Ê½¿ª¹ØÖĞ¶Ï£¬ĞèÒªcpu_sr±£´æÖĞ¶Ï×´Ì¬
 #endif
 
 
@@ -219,28 +219,28 @@ INT8U OSTaskCreate(void (*task) (void *p_arg), void *p_arg, OS_STK * ptos, INT8U
 #endif
 
 #if OS_ARG_CHK_EN > 0u
-	if (prio > OS_LOWEST_PRIO) {	/* Make sure priority is within allowable range           */
+	if (prio > OS_LOWEST_PRIO) {	/*ÊäÈëÓÅÏÈ¼¶ÊÇ·ñºÏ·¨ Make sure priority is within allowable range           */
 		return (OS_ERR_PRIO_INVALID);
 	}
 #endif
 	OS_ENTER_CRITICAL();
-	if (OSIntNesting > 0u) {	/* Make sure we don't create the task from within an ISR  */
+	if (OSIntNesting > 0u) {	/*ÊÇ·ñ´¦ÓÚÖĞ¶Ï·şÎñ³ÌĞò Make sure we don't create the task from within an ISR  */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_CREATE_ISR);
 	}
-	if (OSTCBPrioTbl[prio] == (OS_TCB *) 0) {	/* Make sure task doesn't already exist at this priority  */
-		OSTCBPrioTbl[prio] = OS_TCB_RESERVED;	/* Reserve the priority to prevent others from doing ...  */
+	if (OSTCBPrioTbl[prio] == (OS_TCB *) 0) {	/*ÓÅÏÈ¼¶ÊÇ·ñ±»Õ¼ÓÃ Make sure task doesn't already exist at this priority  */
+		OSTCBPrioTbl[prio] = OS_TCB_RESERVED;	/*Õ¼ÓÃ¸ÃÓÅÏÈ¼¶ Reserve the priority to prevent others from doing ...  */
 		/* ... the same thing until task is created.              */
 		OS_EXIT_CRITICAL();
-		psp = OSTaskStkInit(task, p_arg, ptos, 0u);	/* Initialize the task's stack         */
-		err = OS_TCBInit(prio, psp, (OS_STK *) 0, 0u, 0u, (void *) 0, 0u);
-		if (err == OS_ERR_NONE) {
-			if (OSRunning == OS_TRUE) {	/* Find highest priority task if multitasking has started */
-				OS_Sched();
+		psp = OSTaskStkInit(task, p_arg, ptos, 0u);	/*½¨Á¢ÈÎÎñÕ»,·µ»ØĞÂÕ»¶¥ Initialize the task's stack         */
+		err = OS_TCBInit(prio, psp, (OS_STK *) 0, 0u, 0u, (void *) 0, 0u);  //³õÊ¼»¯ÈÎÎñ¿ØÖÆ¿é
+		if (err == OS_ERR_NONE) {       //³õÊ¼»¯ÈÎÎñ¿ØÖÆ¿éÓĞÃ»ÓĞ´í
+			if (OSRunning == OS_TRUE) {	/*ÄÚºËÅÜÆğÀ´ÁËÂğ Find highest priority task if multitasking has started */
+				OS_Sched();             //ÈÎÎñµ÷¶È
 			}
-		} else {
+		} else {                                //³õÊ¼»¯TCBÓĞ´í
 			OS_ENTER_CRITICAL();
-			OSTCBPrioTbl[prio] = (OS_TCB *) 0;	/* Make this priority available to others                 */
+			OSTCBPrioTbl[prio] = (OS_TCB *) 0;	/* ½»»¹TCB Make this priority available to others                 */
 			OS_EXIT_CRITICAL();
 		}
 		return (err);
@@ -282,7 +282,7 @@ INT8U OSTaskCreate(void (*task) (void *p_arg), void *p_arg, OS_STK * ptos, INT8U
 *              prio      is the task's priority.  A unique priority MUST be assigned to each task and the
 *                        lower the number, the higher the priority.
 *
-*              id        is the task's ID (0..65535)
+*              id        is the task's ID (0..65535),ÓÃÓÚÍØÕ¹Ö§³ÖµÄÈÎÎñÊıÄ¿´óÓÚ64
 *
 *              pbos      is a pointer to the task's bottom of stack.  If the configuration constant
 *                        OS_STK_GROWTH is set to 1, the stack is assumed to grow downward (i.e. from high
@@ -290,26 +290,29 @@ INT8U OSTaskCreate(void (*task) (void *p_arg), void *p_arg, OS_STK * ptos, INT8U
 *                        location of the stack.  If OS_STK_GROWTH is set to 0, 'pbos' will point to the
 *                        HIGHEST memory location of the stack and the stack will grow with increasing
 *                        memory locations.  'pbos' MUST point to a valid 'free' data item.
+*                        Ö¸ÏòÈÎÎñµÄ¶ÑÕ»Õ»µ×µÄÖ¸Õë,ÓÃÓÚ¶ÑÕ»¼ìÑé
 *
 *              stk_size  is the size of the stack in number of elements.  If OS_STK is set to INT8U,
 *                        'stk_size' corresponds to the number of bytes available.  If OS_STK is set to
 *                        INT16U, 'stk_size' contains the number of 16-bit entries available.  Finally, if
 *                        OS_STK is set to INT32U, 'stk_size' contains the number of 32-bit entries
 *                        available on the stack.
+*                        ¶ÑÕ»³ÉÔ±ÊıÄ¿µÄÈİÁ¿£,µ¥Î»ÊÇ¶ÑÕ»Èë¿ÚµØÖ·¿í¶È
 *
 *              pext      is a pointer to a user supplied memory location which is used as a TCB extension.
 *                        For example, this user memory can hold the contents of floating-point registers
 *                        during a context switch, the time each task takes to execute, the number of times
 *                        the task has been switched-in, etc.
+*                        ÓÃ»§¸½¼ÓÊı¾İ½á¹¹µÄÖ¸Õë£¬ÓÃÓÚÍØÕ¹OS_TCB
 *
 *              opt       contains additional information (or options) about the behavior of the task.  The
 *                        LOWER 8-bits are reserved by uC/OS-II while the upper 8 bits can be application
 *                        specific.  See OS_TASK_OPT_??? in uCOS-II.H.  Current choices are:
 *
-*                        OS_TASK_OPT_STK_CHK      Stack checking to be allowed for the task
-*                        OS_TASK_OPT_STK_CLR      Clear the stack when the task is created
+*                        OS_TASK_OPT_STK_CHK      Stack checking to be allowed for the task ÔÊĞí¶ÑÕ»¼ìÑé
+*                        OS_TASK_OPT_STK_CLR      Clear the stack when the task is created ÔÊĞí¶ÑÕ»ÇåÁã
 *                        OS_TASK_OPT_SAVE_FP      If the CPU has floating-point registers, save them
-*                                                 during a context switch.
+*                                                 during a context switch.  ÔÊĞíÈÎÎñ×ö¸¡µãÔËËã
 *
 * Returns    : OS_ERR_NONE             if the function was successful.
 *              OS_PRIO_EXIT            if the task priority already exist
@@ -328,7 +331,7 @@ INT8U OSTaskCreateExt(void (*task) (void *p_arg),
 	OS_STK *psp;
 	INT8U err;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register               */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //²ÉÓÃµÚÈıÖÖ·½Ê½ÊµÏÖ¿ª¹ØÖĞ¶Ï,ĞèÒªcpu_srÀ´´æ´¢ÖĞ¶Ï×´Ì¬
 #endif
 
 
@@ -340,33 +343,33 @@ INT8U OSTaskCreateExt(void (*task) (void *p_arg),
 #endif
 
 #if OS_ARG_CHK_EN > 0u
-	if (prio > OS_LOWEST_PRIO) {	/* Make sure priority is within allowable range           */
+	if (prio > OS_LOWEST_PRIO) {	/*¼ì²éÓÅÏÈ¼¶µÄºÏ·¨ĞÔ Make sure priority is within allowable range           */
 		return (OS_ERR_PRIO_INVALID);
 	}
 #endif
 	OS_ENTER_CRITICAL();
-	if (OSIntNesting > 0u) {	/* Make sure we don't create the task from within an ISR  */
+	if (OSIntNesting > 0u) {	/*ÊÇ·ñÔÚÖĞ¶Ï·şÎñ³ÌĞòÖĞ Make sure we don't create the task from within an ISR  */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_CREATE_ISR);
 	}
-	if (OSTCBPrioTbl[prio] == (OS_TCB *) 0) {	/* Make sure task doesn't already exist at this priority  */
-		OSTCBPrioTbl[prio] = OS_TCB_RESERVED;	/* Reserve the priority to prevent others from doing ...  */
+	if (OSTCBPrioTbl[prio] == (OS_TCB *) 0) {	/*ÓÅÏÈ¼¶ÊÇ·ñ±»Õ¼ÓÃ Make sure task doesn't already exist at this priority  */
+		OSTCBPrioTbl[prio] = OS_TCB_RESERVED;	/*Õ¼ÓÃ¸ÃÓÅÏÈ¼¶ Reserve the priority to prevent others from doing ...  */
 		/* ... the same thing until task is created.              */
 		OS_EXIT_CRITICAL();
 
 #if (OS_TASK_STAT_STK_CHK_EN > 0u)
-		OS_TaskStkClr(pbos, stk_size, opt);	/* Clear the task stack (if needed)     */
+		OS_TaskStkClr(pbos, stk_size, opt);	/*ÈÎÎñ¶ÑÕ»ÇåÁã Clear the task stack (if needed)     */
 #endif
 
-		psp = OSTaskStkInit(task, p_arg, ptos, opt);	/* Initialize the task's stack          */
-		err = OS_TCBInit(prio, psp, pbos, id, stk_size, pext, opt);
-		if (err == OS_ERR_NONE) {
-			if (OSRunning == OS_TRUE) {	/* Find HPT if multitasking has started */
-				OS_Sched();
+		psp = OSTaskStkInit(task, p_arg, ptos, opt);	/*³õÊ¼»¯ÈÎÎñÕ»,·µ»ØĞÂÕ»¶¥ Initialize the task's stack          */
+		err = OS_TCBInit(prio, psp, pbos, id, stk_size, pext, opt); //³õÊ¼»¯TCB
+		if (err == OS_ERR_NONE) {       //³õÊ¼»¯TCB³É¹¦
+			if (OSRunning == OS_TRUE) {	/*ÄÚºËÔËĞĞÃ´ Find HPT if multitasking has started */
+				OS_Sched();             //ÈÎÎñµ÷¶È
 			}
-		} else {
+		} else {                                //³õÊ¼»¯TCBÃ»³É¹¦
 			OS_ENTER_CRITICAL();
-			OSTCBPrioTbl[prio] = (OS_TCB *) 0;	/* Make this priority avail. to others  */
+			OSTCBPrioTbl[prio] = (OS_TCB *) 0;	/* ½»»¹TCB Make this priority avail. to others  */
 			OS_EXIT_CRITICAL();
 		}
 		return (err);
@@ -382,19 +385,20 @@ INT8U OSTaskCreateExt(void (*task) (void *p_arg),
 *
 * Description: This function allows you to delete a task.  The calling task can delete itself by
 *              its own priority number.  The deleted task is returned to the dormant state and can be
-*              re-activated by creating the deleted task again.
+*              re-activated by creating the deleted task again.É¾³ıÈÎÎñµÄ¹¦ÄÜ²»ÊÇÉ¾³ıÈÎÎñ´úÂë£¬¶øÊÇÊ¹´úÂë
+*              ·µ»Ø²¢´¦ÓÚĞİÃßÌ¬,ÈÎÎñµÄ´úÂë½«²»»á±»OSµ÷ÓÃ£¬³ı·ÇÖØĞÂÆô¶¯.
 *
 * Arguments  : prio    is the priority of the task to delete.  Note that you can explicitely delete
 *                      the current task without knowing its priority level by setting 'prio' to
 *                      OS_PRIO_SELF.
 *
-* Returns    : OS_ERR_NONE             if the call is successful
-*              OS_ERR_TASK_DEL_IDLE    if you attempted to delete uC/OS-II's idle task
-*              OS_ERR_PRIO_INVALID     if the priority you specify is higher that the maximum allowed
+* Returns    : OS_ERR_NONE             if the call is successful ÈÎÎñÉ¾³ı³É¹¦
+*              OS_ERR_TASK_DEL_IDLE    if you attempted to delete uC/OS-II's idle task ÊÔÍ¼É¾³ı¿ÕÏĞÈÎÎñ
+*              OS_ERR_PRIO_INVALID     if the priority you specify is higher that the maximum allowed¸ø³öµÄÓÅÏÈ¼¶·Ç·¨
 *                                      (i.e. >= OS_LOWEST_PRIO) or, you have not specified OS_PRIO_SELF.
-*              OS_ERR_TASK_DEL         if the task is assigned to a Mutex PIP.
-*              OS_ERR_TASK_NOT_EXIST   if the task you want to delete does not exist.
-*              OS_ERR_TASK_DEL_ISR     if you tried to delete a task from an ISR
+*              OS_ERR_TASK_DEL         if the task is assigned to a Mutex PIP.ÈÎÎñ±»·ÖÅäÒ»¸ö»¥³âµÄ¼Ì³ĞÓÅÏÈ¼¶
+*              OS_ERR_TASK_NOT_EXIST   if the task you want to delete does not exist.É¾³ıµÄÈÎÎñ²»´æÔÚ
+*              OS_ERR_TASK_DEL_ISR     if you tried to delete a task from an ISRÊÔÍ¼ÔÚÖĞ¶Ï´¦Àí³ÌĞòÖĞÉ¾³ıÈÎÎñ
 *
 * Notes      : 1) To reduce interrupt latency, OSTaskDel() 'disables' the task:
 *                    a) by making it not ready
@@ -420,19 +424,19 @@ INT8U OSTaskDel(INT8U prio)
 #endif
 	OS_TCB *ptcb;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register    */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //²ÉÓÃµÚÈıÖÖ·½Ê½¿ª¹ØÖĞ¶Ï£¬ĞèÒªcpu_srÀ´±£´æÖĞ¶Ï×´Ì¬
 #endif
 
 
 
-	if (OSIntNesting > 0u) {	/* See if trying to delete from ISR            */
+	if (OSIntNesting > 0u) {	/* ÊÇ·ñÔÚÖĞ¶Ï·şÎñ³ÌĞòÖĞSee if trying to delete from ISR            */
 		return (OS_ERR_TASK_DEL_ISR);
 	}
-	if (prio == OS_TASK_IDLE_PRIO) {	/* Not allowed to delete idle task             */
+	if (prio == OS_TASK_IDLE_PRIO) {	/* É¾³ıµÄÊÇ·ñÊÇ¿ÕÏĞÈÎÎñNot allowed to delete idle task             */
 		return (OS_ERR_TASK_DEL_IDLE);
 	}
 #if OS_ARG_CHK_EN > 0u
-	if (prio >= OS_LOWEST_PRIO) {	/* Task priority valid ?                       */
+	if (prio >= OS_LOWEST_PRIO) {	/* ÊäÈëµÄÓÅÏÈ¼¶ÊÇ·ñºÏ·¨Task priority valid ?                       */
 		if (prio != OS_PRIO_SELF) {
 			return (OS_ERR_PRIO_INVALID);
 		}
@@ -441,25 +445,25 @@ INT8U OSTaskDel(INT8U prio)
 
 /*$PAGE*/
 	OS_ENTER_CRITICAL();
-	if (prio == OS_PRIO_SELF) {	/* See if requesting to delete self            */
-		prio = OSTCBCur->OSTCBPrio;	/* Set priority to delete to current           */
+	if (prio == OS_PRIO_SELF) {	/* É¾³ıÊÇ×ÔÉíÃ´ See if requesting to delete self            */
+		prio = OSTCBCur->OSTCBPrio;	/* ÔÊĞíÉ¾³ı×ÔÉí Set priority to delete to current           */
 	}
-	ptcb = OSTCBPrioTbl[prio];
-	if (ptcb == (OS_TCB *) 0) {	/* Task to delete must exist                   */
+	ptcb = OSTCBPrioTbl[prio];  //Ö¸Ïò±»É¾³ıÈÎÎñµÄTCB
+	if (ptcb == (OS_TCB *) 0) {	/* È·±£±»É¾³ıµÄTCBÊÇ´æÔÚµÄ Task to delete must exist                   */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_NOT_EXIST);
 	}
-	if (ptcb == OS_TCB_RESERVED) {	/* Must not be assigned to Mutex               */
+	if (ptcb == OS_TCB_RESERVED) {	/*±»É¾³ıµÄÈÎÎñ²»ÄÜ±»·ÖÅä»¥³â Must not be assigned to Mutex               */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_DEL);
 	}
 
 	OSRdyTbl[ptcb->OSTCBY] &= (OS_PRIO) ~ ptcb->OSTCBBitX;
-	if (OSRdyTbl[ptcb->OSTCBY] == 0u) {	/* Make task not ready                         */
-		OSRdyGrp &= (OS_PRIO) ~ ptcb->OSTCBBitY;
+	if (OSRdyTbl[ptcb->OSTCBY] == 0u) {	/*ÈôÈÎÎñ´¦ÓÚ¾ÍĞ÷±íÖĞ(ÉÏÒ»¾ä½«Æä¸´Î»ÁË) Make task not ready                         */
+		OSRdyGrp &= (OS_PRIO) ~ ptcb->OSTCBBitY;    //½«ÈÎÎñÒÆ³ö¾ÍĞ÷±í
 	}
 #if (OS_EVENT_EN)
-	if (ptcb->OSTCBEventPtr != (OS_EVENT *) 0) {
+	if (ptcb->OSTCBEventPtr != (OS_EVENT *) 0) {//Èç¹ûÈÎÎñÔÚµÈ´ıÏûÏ¢¡¢ĞÅºÅÁ¿µÈ£¬½«Æä´ÓµÈ´ıÁĞ±íÖĞÉ¾³ı
 		OS_EventTaskRemove(ptcb, ptcb->OSTCBEventPtr);	/* Remove this task from any event   wait list */
 	}
 #if (OS_EVENT_MULTI_EN > 0u)
@@ -471,41 +475,45 @@ INT8U OSTaskDel(INT8U prio)
 
 #if (OS_FLAG_EN > 0u) && (OS_MAX_FLAGS > 0u)
 	pnode = ptcb->OSTCBFlagNode;
-	if (pnode != (OS_FLAG_NODE *) 0) {	/* If task is waiting on event flag            */
-		OS_FlagUnlink(pnode);	/* Remove from wait list                       */
+	if (pnode != (OS_FLAG_NODE *) 0) {	/*ÈÎÎñ´¦ÓÚÊÂ¼ş±êÖ¾µÈ´ıÁĞ±íÖĞ If task is waiting on event flag            */
+		OS_FlagUnlink(pnode);	/*½«Æä´ÓµÈ´ıÁ´±íÖĞÉ¾³ı Remove from wait list                       */
 	}
 #endif
 
-	ptcb->OSTCBDly = 0u;	/* Prevent OSTimeTick() from updating          */
-	ptcb->OSTCBStat = OS_STAT_RDY;	/* Prevent task from being resumed             */
-	ptcb->OSTCBStatPend = OS_STAT_PEND_OK;
+	ptcb->OSTCBDly = 0u;	/*½«ÑÓÊ±ÊıÇåÁã,È·±£ÖØ¿ªÖĞ¶Ïºó,ISR²»ÔÙ»áÊ¹¸ÃÈÎÎñ¾ÍĞ÷ Prevent OSTimeTick() from updating          */
+	ptcb->OSTCBStat = OS_STAT_RDY;	/*ÉèÖÃTCB×´Ì¬£¬·ÀÖ¹µ÷ÓÃOSTaskResumeÊ¹ÆäÖØĞÂ¼¤»î Prevent task from being resumed             */
+	ptcb->OSTCBStatPend = OS_STAT_PEND_OK; //ÉèÖÃpendÍê³É±êÖ¾
+	//Ö´ĞĞÍê±ÏÉÏÊö¹ı³Ìºó,±»É¾³ıµÄÈÎÎñ¼È²»ÔÙµÈ´ıÑÓÊ±ÆÚÂú,Ò²²»»á³öÏÖÔÚ¾ÍĞ÷±íºÍ¸÷ÖÖÈÎÎñµÈ´ıÁĞ±íÖĞ
+	//ÄÚºËÔÙÒ²ÕÒ²»µ½ËüÁË,ËùÒÔËü¾Í²»»áÔÙ±»ÆäËûÈÎÎñ»òÕßISRÖÃÓÚ¾ÍĞ÷Ì¬
 	if (OSLockNesting < 255u) {	/* Make sure we don't context switch           */
-		OSLockNesting++;
+		OSLockNesting++;        //Ëø×¡µ÷¶ÈÆ÷
 	}
-	OS_EXIT_CRITICAL();	/* Enabling INT. ignores next instruc.         */
-	OS_Dummy();		/* ... Dummy ensures that INTs will be         */
-	OS_ENTER_CRITICAL();	/* ... disabled HERE!                          */
+	OS_EXIT_CRITICAL();	/*ÒòÎªÖĞ¶Ï¹Ø±ÕµÄÌ«¾Ã,¿ª·ÅÒ»´ÎÖĞ¶Ï,Ëõ¶ÌÖĞ¶ÏÏìÓ¦ Enabling INT. ignores next instruc.         */
+	OS_Dummy();		/* Ö´ĞĞÒ»Ìõ¿ÕÖ¸Áî£¬Ôö¼ÓÖĞ¶Ï½øÈëµÄ»ú»á ... Dummy ensures that INTs will be         */
+	OS_ENTER_CRITICAL();	/*ÖØĞÂ¹Ø±ÕÖĞ¶Ï ... disabled HERE!                          */
+
 	if (OSLockNesting > 0u) {	/* Remove context switch lock                  */
-		OSLockNesting--;
+		OSLockNesting--;        //½âËøµ÷¶ÈÆ÷
 	}
-	OSTaskDelHook(ptcb);	/* Call user defined hook                      */
-	OSTaskCtr--;		/* One less task being managed                 */
-	OSTCBPrioTbl[prio] = (OS_TCB *) 0;	/* Clear old priority entry                    */
-	if (ptcb->OSTCBPrev == (OS_TCB *) 0) {	/* Remove from TCB chain                       */
-		ptcb->OSTCBNext->OSTCBPrev = (OS_TCB *) 0;
+
+	OSTaskDelHook(ptcb);	/* µ÷ÓÃÀ©Õ¹¹³×Óº¯Êı,¿ÉÒÔÀûÓÃËüÉ¾³ı»òÊÍ·Å×Ô¶¨ÒåµÄTCB¸½¼ÓÊı¾İ½á¹¹ Call user defined hook                      */
+	OSTaskCtr--;		/*ÈÎÎñÊıÁ¿¼ÆÊıÆ÷¼õÒ» One less task being managed                 */
+	OSTCBPrioTbl[prio] = (OS_TCB *) 0;	/*´ÓÓÅÏÈ¼¶ÁĞ±íÉ¾³ıOS_TCB Clear old priority entry                    */
+	if (ptcb->OSTCBPrev == (OS_TCB *) 0) {	/*ÔÚË«ÏòÁ´±íÖĞÉ¾³ıTCB Remove from TCB chain                       */
+		ptcb->OSTCBNext->OSTCBPrev = (OS_TCB *) 0; //Èç¹ûÇ°ÃæÃ»ÓĞTCBÁË
 		OSTCBList = ptcb->OSTCBNext;
 	} else {
 		ptcb->OSTCBPrev->OSTCBNext = ptcb->OSTCBNext;
 		ptcb->OSTCBNext->OSTCBPrev = ptcb->OSTCBPrev;
 	}
-	ptcb->OSTCBNext = OSTCBFreeList;	/* Return TCB to free TCB list                 */
+	ptcb->OSTCBNext = OSTCBFreeList;	/*½«±»É¾³ıµÄTCB·Å»Øµ½¿ÕÏĞÁ´±íÖĞ Return TCB to free TCB list                 */
 	OSTCBFreeList = ptcb;
 #if OS_TASK_NAME_EN > 0u
-	ptcb->OSTCBTaskName = (INT8U *) (void *) "?";
+	ptcb->OSTCBTaskName = (INT8U *) (void *) "?";   //Ãû×ÖÒ²ÊÕ»Ø£¬¸Ä³É?
 #endif
 	OS_EXIT_CRITICAL();
 	if (OSRunning == OS_TRUE) {
-		OS_Sched();	/* Find new highest priority task              */
+		OS_Sched();	/*ÖØĞÂ´¥·¢ÈÎÎñµ÷¶È Find new highest priority task              */
 	}
 	return (OS_ERR_NONE);
 }
@@ -542,18 +550,19 @@ INT8U OSTaskDel(INT8U prio)
 *                           }
 *                       }
 *                   }
+*              Í¨ÖªÈÃÄÇĞ©Õ¼ÓĞ×ÊÔ´µÄÈÎÎñÏÈÊÍ·ÅÈÎÎñÔÙÉ¾³ı
 *
 * Arguments  : prio    is the priority of the task to request the delete from
 *
-* Returns    : OS_ERR_NONE            if the task exist and the request has been registered
+* Returns    : OS_ERR_NONE            if the task exist and the request has been registered µ÷ÓÃ³É¹¦
 *              OS_ERR_TASK_NOT_EXIST  if the task has been deleted.  This allows the caller to know whether
-*                                     the request has been executed.
-*              OS_ERR_TASK_DEL        if the task is assigned to a Mutex.
-*              OS_ERR_TASK_DEL_IDLE   if you requested to delete uC/OS-II's idle task
-*              OS_ERR_PRIO_INVALID    if the priority you specify is higher that the maximum allowed
+*                                     the request has been executed. Ö¸¶¨µÄÈÎÎñ²»´æÔÚ
+*              OS_ERR_TASK_DEL        if the task is assigned to a Mutex. ÈÎÎñ±»·ÖÅä»¥³â
+*              OS_ERR_TASK_DEL_IDLE   if you requested to delete uC/OS-II's idle task ÊÔÍ¼É¾³ı¿ÕÈÎÎñ
+*              OS_ERR_PRIO_INVALID    if the priority you specify is higher that the maximum allowed ÊäÈëµÄÓÅÏÈ¼¶·Ç·¨
 *                                     (i.e. >= OS_LOWEST_PRIO) or, you have not specified OS_PRIO_SELF.
 *              OS_ERR_TASK_DEL_REQ    if a task (possibly another task) requested that the running task be
-*                                     deleted.
+*                                     deleted. µ±Ç°ÈÎÎñÊÕµ½ÆäËûÈÎÎñµÄÉ¾³ıÇëÇó
 *********************************************************************************************************
 */
 /*$PAGE*/
@@ -563,38 +572,38 @@ INT8U OSTaskDelReq(INT8U prio)
 	INT8U stat;
 	OS_TCB *ptcb;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register           */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //Ê¹ÓÃ·½Ê½ÈıÀ´¿ª¹ØÖĞ¶Ï,Í¨¹ı¶¨Òåcpu_srÀ´±£´æÖĞ¶Ï×´Ì¬
 #endif
 
 
 
-	if (prio == OS_TASK_IDLE_PRIO) {	/* Not allowed to delete idle task     */
+	if (prio == OS_TASK_IDLE_PRIO) {	/*É¾³ıµÄÊÇ¿ÕÏĞÈÎÎñÃ´ Not allowed to delete idle task     */
 		return (OS_ERR_TASK_DEL_IDLE);
 	}
 #if OS_ARG_CHK_EN > 0u
-	if (prio >= OS_LOWEST_PRIO) {	/* Task priority valid ?               */
+	if (prio >= OS_LOWEST_PRIO) {	/* ÊäÈëµÄÓÅÏÈ¼¶ºÏ·¨Ã´ Task priority valid ?               */
 		if (prio != OS_PRIO_SELF) {
 			return (OS_ERR_PRIO_INVALID);
 		}
 	}
 #endif
-	if (prio == OS_PRIO_SELF) {	/* See if a task is requesting to ...  */
+	if (prio == OS_PRIO_SELF) {	/*ÊÇ×ÔÎÒÉ¾³ıÃ´ See if a task is requesting to ...  */
 		OS_ENTER_CRITICAL();	/* ... this task to delete itself      */
 		stat = OSTCBCur->OSTCBDelReq;	/* Return request status to caller     */
 		OS_EXIT_CRITICAL();
 		return (stat);
 	}
 	OS_ENTER_CRITICAL();
-	ptcb = OSTCBPrioTbl[prio];
-	if (ptcb == (OS_TCB *) 0) {	/* Task to delete must exist           */
+	ptcb = OSTCBPrioTbl[prio];  // Ö¸ÕëÖ¸ÏòÏàÓ¦µÄTCB
+	if (ptcb == (OS_TCB *) 0) {	/* TCBÊÇ·ñ´æÔÚ Task to delete must exist           */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_NOT_EXIST);	/* Task must already be deleted        */
 	}
-	if (ptcb == OS_TCB_RESERVED) {	/* Must NOT be assigned to a Mutex     */
+	if (ptcb == OS_TCB_RESERVED) {	/*ÊÇ·ñ±»·ÖÅäÁË»¥³â  Must NOT be assigned to a Mutex     */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_DEL);
 	}
-	ptcb->OSTCBDelReq = OS_ERR_TASK_DEL_REQ;	/* Set flag indicating task to be DEL. */
+	ptcb->OSTCBDelReq = OS_ERR_TASK_DEL_REQ;	/*ÉèÖÃTCBÏàÓ¦µÄÊı¾İ¿é½á¹¹ Set flag indicating task to be DEL. */
 	OS_EXIT_CRITICAL();
 	return (OS_ERR_NONE);
 }
@@ -763,6 +772,7 @@ void OSTaskNameSet(INT8U prio, INT8U * pname, INT8U * perr)
 *
 * Description: This function is called to resume a previously suspended task.  This is the only call that
 *              will remove an explicit task suspension.
+*              Î¨Ò»¿ÉÒÔ"½â¹Ò"¹ÒÆğÈÎÎñµÄº¯Êı
 *
 * Arguments  : prio     is the priority of the task to resume.
 *
@@ -780,7 +790,7 @@ INT8U OSTaskResume(INT8U prio)
 {
 	OS_TCB *ptcb;
 #if OS_CRITICAL_METHOD == 3u	/* Storage for CPU status register       */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //µÚÈıÖÖ·½Ê½ÊµÏÖµÄ¿ª¹ØÖĞ¶Ï,ĞèÒªcpu_srÀ´´æ´¢ÖĞ¶Ï×´Ì¬
 #endif
 
 
@@ -800,11 +810,11 @@ INT8U OSTaskResume(INT8U prio)
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_NOT_EXIST);
 	}
-	if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) != OS_STAT_RDY) {	/* Task must be suspended                */
-		ptcb->OSTCBStat &= (INT8U) ~ (INT8U) OS_STAT_SUSPEND;	/* Remove suspension                     */
-		if (ptcb->OSTCBStat == OS_STAT_RDY) {	/* See if task is now ready              */
-			if (ptcb->OSTCBDly == 0u) {
-				OSRdyGrp |= ptcb->OSTCBBitY;	/* Yes, Make task ready to run           */
+	if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) != OS_STAT_RDY) {	/*ÈÎÎñÊÇ²»ÊÇ±»¹ÒÆğÁË Task must be suspended                */
+		ptcb->OSTCBStat &= (INT8U) ~ (INT8U) OS_STAT_SUSPEND;	/*Çå³ı¹ÒÆğ±êÖ¾ Remove suspension                     */
+		if (ptcb->OSTCBStat == OS_STAT_RDY) {	/*ÈÎÎñ±êÖ¾ÊÇ·ñ¾ÍĞ÷ See if task is now ready              */
+			if (ptcb->OSTCBDly == 0u) {         //ÓĞÃ»ÓĞÑÓÊ±
+				OSRdyGrp |= ptcb->OSTCBBitY;	/*½«ÈÎÎñ¼ÓÈë¾ÍĞ÷±í Yes, Make task ready to run           */
 				OSRdyTbl[ptcb->OSTCBY] |= ptcb->OSTCBBitX;
 				OS_EXIT_CRITICAL();
 				if (OSRunning == OS_TRUE) {
@@ -833,6 +843,9 @@ INT8U OSTaskResume(INT8U prio)
 * Arguments  : prio          is the task priority
 *
 *              p_stk_data    is a pointer to a data structure of type OS_STK_DATA.
+*              Æä³ÉÔ±ÈçÏÂ:
+*              INT32U       OSFree      ¶ÑÕ»ÖĞÎ´Ê¹ÓÃµÄ×Ö½ÚÊı
+*              INT32U       OSUsed      ¶ÑÕ»ÖĞÒÑÊ¹ÓÃµÄ×Ö½ÚÊı
 *
 * Returns    : OS_ERR_NONE            upon success
 *              OS_ERR_PRIO_INVALID    if the priority you specify is higher that the maximum allowed
@@ -842,7 +855,7 @@ INT8U OSTaskResume(INT8U prio)
 *              OS_ERR_PDATA_NULL      if 'p_stk_data' is a NULL pointer
 *********************************************************************************************************
 */
-#if (OS_TASK_STAT_STK_CHK_EN > 0u) && (OS_TASK_CREATE_EXT_EN > 0u)
+#if (OS_TASK_STAT_STK_CHK_EN > 0u) && (OS_TASK_CREATE_EXT_EN > 0u)  //±ØĞëÊÇÍ¨¹ıOSTaskCreateExt½¨Á¢µÄÈÎÎñ²Å¿ÉÒÔÍ³¼Æ
 INT8U OSTaskStkChk(INT8U prio, OS_STK_DATA * p_stk_data)
 {
 	OS_TCB *ptcb;
@@ -850,25 +863,25 @@ INT8U OSTaskStkChk(INT8U prio, OS_STK_DATA * p_stk_data)
 	INT32U nfree;
 	INT32U size;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register     */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //µÚÈıÖÖ·½Ê½À´¿ª¹ØÖĞ¶Ï£¬ĞèÒªcpu_srÀ´±£´æÖĞ¶Ï×´Ì¬
 #endif
 
 
 
 #if OS_ARG_CHK_EN > 0u
-	if (prio > OS_LOWEST_PRIO) {	/* Make sure task priority is valid             */
+	if (prio > OS_LOWEST_PRIO) {	/*ÓÅÏÈ¼¶ÊÇ·ñºÏ·¨ Make sure task priority is valid             */
 		if (prio != OS_PRIO_SELF) {
 			return (OS_ERR_PRIO_INVALID);
 		}
 	}
-	if (p_stk_data == (OS_STK_DATA *) 0) {	/* Validate 'p_stk_data'                        */
+	if (p_stk_data == (OS_STK_DATA *) 0) {	/*±£´æ¼ìÑé½á¹ûµÄÊı¾İ¸ñÊ½²»ÄÜÎª¿Õ Validate 'p_stk_data'                        */
 		return (OS_ERR_PDATA_NULL);
 	}
 #endif
-	p_stk_data->OSFree = 0u;	/* Assume failure, set to 0 size                */
+	p_stk_data->OSFree = 0u;	/*³õÊ¼»¯ Assume failure, set to 0 size                */
 	p_stk_data->OSUsed = 0u;
 	OS_ENTER_CRITICAL();
-	if (prio == OS_PRIO_SELF) {	/* See if check for SELF                        */
+	if (prio == OS_PRIO_SELF) {	/*½«OS_PRIO_SELF»»Ëã³ÉÓÅÏÈ¼¶ÊıÖµ See if check for SELF                        */
 		prio = OSTCBCur->OSTCBPrio;
 	}
 	ptcb = OSTCBPrioTbl[prio];
@@ -885,18 +898,19 @@ INT8U OSTaskStkChk(INT8U prio, OS_STK_DATA * p_stk_data)
 		return (OS_ERR_TASK_OPT);
 	}
 	nfree = 0u;
-	size = ptcb->OSTCBStkSize;
-	pchk = ptcb->OSTCBStkBottom;
+	size = ptcb->OSTCBStkSize;      //ÈÎÎñÕ»µÄÈİÁ¿
+	pchk = ptcb->OSTCBStkBottom;    //ÈÎÎñÕ»µ×Ö¸Õë
 	OS_EXIT_CRITICAL();
-#if OS_STK_GROWTH == 1u
+#if OS_STK_GROWTH == 1u             //×ÔÉÏÏòÏÂÉú³¤
 	while (*pchk++ == (OS_STK) 0) {	/* Compute the number of zero entries on the stk */
-		nfree++;
+		nfree++;                    //Í³¼Æ¶ÑÕ»ÖĞ´æ´¢ÖµÎªÁãµÄÁ¬Ğø¿Õ¼ä
 	}
 #else
 	while (*pchk-- == (OS_STK) 0) {
 		nfree++;
 	}
 #endif
+    //ÕâÀïµÃµ½µÄÊı¾İ¶¼ÊÇ¶ÑÕ»Ö¸Õë¿í¶ÈÎªµ¥Î»µÄ³¤¶È,³ËÒÔ4»Ö¸´×Ö½ÚÎªµ¥Î»
 	p_stk_data->OSFree = nfree * sizeof(OS_STK);	/* Compute number of free bytes on the stack */
 	p_stk_data->OSUsed = (size - nfree) * sizeof(OS_STK);	/* Compute number of bytes used on the stack */
 	return (OS_ERR_NONE);
@@ -923,6 +937,7 @@ INT8U OSTaskStkChk(INT8U prio, OS_STK_DATA * p_stk_data)
 * Note       : You should use this function with great care.  If you suspend a task that is waiting for
 *              an event (i.e. a message, a semaphore, a queue ...) you will prevent this task from
 *              running when the event arrives.
+*              Èç¹û¹ÒÆğÒ»¸öÔÚµÈ´ıÊÂ¼ş(ÏûÏ¢¡¢ĞÅºÅÁ¿µÈ)µÄÈÎÎñ,µ±ÊÂ¼ş·¢ÉúÊ±,ÈÎÎñ²¢²»»á±»Ö´ĞĞ(»¹ÔÚ¹ÒÆğÄØ)
 *********************************************************************************************************
 */
 
@@ -933,32 +948,32 @@ INT8U OSTaskSuspend(INT8U prio)
 	OS_TCB *ptcb;
 	INT8U y;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register           */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //²ÉÓÃµÚÈıÖÖ·½Ê½¿ª¹ØÖĞ¶Ï,ĞèÒªcpu_srÀ´±£´æÖĞ¶Ï×´Ì¬
 #endif
 
 
 
 #if OS_ARG_CHK_EN > 0u
-	if (prio == OS_TASK_IDLE_PRIO) {	/* Not allowed to suspend idle task    */
+	if (prio == OS_TASK_IDLE_PRIO) {	/*²»ÄÜÉ¾³ı¿ÕÈÎÎñ Not allowed to suspend idle task    */
 		return (OS_ERR_TASK_SUSPEND_IDLE);
 	}
-	if (prio >= OS_LOWEST_PRIO) {	/* Task priority valid ?               */
+	if (prio >= OS_LOWEST_PRIO) {	/*ÊäÈëÓÅÏÈ¼¶·Ç·¨ Task priority valid ?               */
 		if (prio != OS_PRIO_SELF) {
 			return (OS_ERR_PRIO_INVALID);
 		}
 	}
 #endif
 	OS_ENTER_CRITICAL();
-	if (prio == OS_PRIO_SELF) {	/* See if suspend SELF                 */
-		prio = OSTCBCur->OSTCBPrio;
-		self = OS_TRUE;
+	if (prio == OS_PRIO_SELF) {	/*¼ì²éÊÇ·ñ¹ÒÆğ×ÔÉí See if suspend SELF                 */
+		prio = OSTCBCur->OSTCBPrio; //½«OS_PRIO_SELF»»Ëã³ÉÓÅÏÈ¼¶Öµ
+		self = OS_TRUE;         //ÉèÖÃ×ÔÎÒ¹ÒÆğÊ±µÄµ÷¶È±äÁ¿±êÖ¾,ÒÔ±ãÔÚ×ÔÎÒ¹ÒÆğºó½øĞĞÈÎÎñÇĞ»»
 	} else if (prio == OSTCBCur->OSTCBPrio) {	/* See if suspending self              */
 		self = OS_TRUE;
-	} else {
+	} else {                //²»¹ÒÆğ×ÔÉí,ÒÔºó²»½øĞĞÈÎÎñÇĞ»»
 		self = OS_FALSE;	/* No suspending another task          */
 	}
 	ptcb = OSTCBPrioTbl[prio];
-	if (ptcb == (OS_TCB *) 0) {	/* Task to suspend must exist          */
+	if (ptcb == (OS_TCB *) 0) {	/* ±»¹ÒÆğµÄÈÎÎñÊÇ´æÔÚµÄ Task to suspend must exist          */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_SUSPEND_PRIO);
 	}
@@ -966,14 +981,14 @@ INT8U OSTaskSuspend(INT8U prio)
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_NOT_EXIST);
 	}
-	y = ptcb->OSTCBY;
+	y = ptcb->OSTCBY;           //ÈÎÎñ´æÔÚ,´Ó¾ÍĞ÷±íÖĞÉ¾³ı
 	OSRdyTbl[y] &= (OS_PRIO) ~ ptcb->OSTCBBitX;	/* Make task not ready                 */
 	if (OSRdyTbl[y] == 0u) {
 		OSRdyGrp &= (OS_PRIO) ~ ptcb->OSTCBBitY;
 	}
-	ptcb->OSTCBStat |= OS_STAT_SUSPEND;	/* Status of task is 'SUSPENDED'       */
+	ptcb->OSTCBStat |= OS_STAT_SUSPEND;	/*ÉèÖÃ±êÖ¾,±êÊ¾±»¹ÒÆğ Status of task is 'SUSPENDED'       */
 	OS_EXIT_CRITICAL();
-	if (self == OS_TRUE) {	/* Context switch only if SELF         */
+	if (self == OS_TRUE) {	/*Èç¹û¹ÒÆğ×ÔÉí,½øĞĞÒ»´ÎÈÎÎñµ÷¶È Context switch only if SELF         */
 		OS_Sched();	/* Find new highest priority task      */
 	}
 	return (OS_ERR_NONE);
@@ -985,10 +1000,12 @@ INT8U OSTaskSuspend(INT8U prio)
 *                                            QUERY A TASK
 *
 * Description: This function is called to obtain a copy of the desired task's TCB.
+*              ÈÎÎñĞÅÏ¢»ñÈ¡
 *
 * Arguments  : prio         is the priority of the task to obtain information from.
 *
 *              p_task_data  is a pointer to where the desired task's OS_TCB will be stored.
+*                           ±£´æ·µ»ØµÄÈÎÎñTCBµÄÒ»¸ö¿½±´
 *
 * Returns    : OS_ERR_NONE            if the requested task is suspended
 *              OS_ERR_PRIO_INVALID    if the priority you specify is higher that the maximum allowed
@@ -996,6 +1013,7 @@ INT8U OSTaskSuspend(INT8U prio)
 *              OS_ERR_PRIO            if the desired task has not been created
 *              OS_ERR_TASK_NOT_EXIST  if the task is assigned to a Mutex PIP
 *              OS_ERR_PDATA_NULL      if 'p_task_data' is a NULL pointer
+*              µ÷ÓÃÊ±£¬ÇëĞ¡ĞÄ´¦ÀíOSTCBNextºÍOSTCBPrevÖ¸Õë£¬²»ÒªÈ¥¸Ä±äËüÃÇ.
 *********************************************************************************************************
 */
 
@@ -1004,7 +1022,7 @@ INT8U OSTaskQuery(INT8U prio, OS_TCB * p_task_data)
 {
 	OS_TCB *ptcb;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register           */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //µÚÈıÖÖ·½Ê½ÊµÏÖ¿ª¹ØÖĞ¶Ï,ĞèÒªcpu_srÀ´±£´æÖĞ¶Ï×´Ì¬
 #endif
 
 
@@ -1052,6 +1070,7 @@ INT8U OSTaskQuery(INT8U prio, OS_TCB * p_task_data)
 *
 *              id        is the 'id' of the desired task register.  Note that the 'id' must be less
 *                        than OS_TASK_REG_TBL_SIZE
+*                        ÏàÓ¦µÄ¼Ä´æÆ÷id£¬±ØĞëĞ¡ÓÚOS_TASK_REG_TBL_SIZE
 *
 *              perr      is a pointer to a variable that will hold an error code related to this call.
 *
@@ -1169,6 +1188,9 @@ void OSTaskRegSet(INT8U prio, INT8U id, INT32U value, INT8U * perr)
 *
 * Description: This function is called if a task accidentally returns without deleting itself.  In other
 *              words, a task should either be an infinite loop or delete itself if it's done.
+*              Ã¿¸öÈÎÎñÒªÃ´ÊÇÎŞÏŞÑ­»·£¬ÒªÃ´ÈÎÎñÍê³Éºó×ÔĞĞÁË¶ÏÉ¾³ı×Ô¼º¡£
+*              Èç¹ûÓĞ¸öÈÎÎñ²»ÊÇÎŞÏŞÑ­»·£¬ÈÎÎñÍê³ÉºóÒ²Ã»ÓĞÉ¾³ı×Ô¼º£¬¶øÊÇÖ´ĞĞÍê±Ïºó·µ»ØÁË
+*              ±¾º¯Êı´¦ÀíÕâÖÖÇé¿ö
 *
 * Arguments  : none
 *
@@ -1180,7 +1202,7 @@ void OSTaskRegSet(INT8U prio, INT8U id, INT32U value, INT8U * perr)
 
 void OS_TaskReturn(void)
 {
-	OSTaskReturnHook(OSTCBCur);	/* Call hook to let user decide on what to do        */
+	OSTaskReturnHook(OSTCBCur);	/*ÓÃ»§×Ô¶¨ÒåµÄ´¦Àí·½Ê½ Call hook to let user decide on what to do        */
 
 #if OS_TASK_DEL_EN > 0u
 	(void) OSTaskDel(OS_PRIO_SELF);	/* Delete task if it accidentally returns!           */
@@ -1197,6 +1219,7 @@ void OS_TaskReturn(void)
 *                                        CLEAR TASK STACK
 *
 * Description: This function is used to clear the stack of a task (i.e. write all zeros)
+*              ¶ÑÕ»ÇåÁã
 *
 * Arguments  : pbos     is a pointer to the task's bottom of stack.  If the configuration constant
 *                       OS_STK_GROWTH is set to 1, the stack is assumed to grow downward (i.e. from high
