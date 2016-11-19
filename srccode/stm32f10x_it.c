@@ -98,7 +98,7 @@ void PendSV_Handler(void)
   * @param  None
   * @retval : None
   */
-void SysTick_Handler(void)
+void SysTick_Handler(void)      //时钟节拍中断服务子程序
 {
 	OSIntEnter();
 	OSTimeTick();
@@ -111,7 +111,7 @@ void SysTick_Handler(void)
 * 入口参数：无
 * 出口参数：无
 * 说    明：
-* 调用方法：无 
+* 调用方法：无
 ****************************************************************************/
 void EXTI9_5_IRQHandler(void)
 {
@@ -124,7 +124,7 @@ void EXTI9_5_IRQHandler(void)
 * 入口参数：无
 * 出口参数：无
 * 说    明：
-* 调用方法：无 
+* 调用方法：无
 ****************************************************************************/
 void EXTI1_IRQHandler(void)
 {
@@ -137,7 +137,7 @@ void EXTI1_IRQHandler(void)
 * 入口参数：无
 * 出口参数：无
 * 说    明：
-* 调用方法：无 
+* 调用方法：无
 ****************************************************************************/
 void EXTI2_IRQHandler(void)
 {
@@ -150,7 +150,7 @@ void EXTI2_IRQHandler(void)
 * 入口参数：无
 * 出口参数：无
 * 说    明：
-* 调用方法：无 
+* 调用方法：无
 ****************************************************************************/
 void EXTI3_IRQHandler(void)
 {

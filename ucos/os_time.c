@@ -45,27 +45,28 @@ void OSTimeDly(INT32U ticks)
 {
 	INT8U y;
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register           */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //使用方法三来开关中断，需要cpu_sr来保存中断状态
 #endif
 
 
 
-	if (OSIntNesting > 0u) {	/* See if trying to call from an ISR                  */
+	if (OSIntNesting > 0u) {	/* 中断服务程序不能延时 See if trying to call from an ISR                  */
 		return;
 	}
-	if (OSLockNesting > 0u) {	/* See if called with scheduler locked                */
+	if (OSLockNesting > 0u) {	/* 调度锁住了不能延时 See if called with scheduler locked                */
 		return;
 	}
-	if (ticks > 0u) {	/* 0 means no delay!                                  */
+	if (ticks > 0u) {	/* 参数为0,表示不延时 0 means no delay!                                  */
 		OS_ENTER_CRITICAL();
 		y = OSTCBCur->OSTCBY;	/* Delay current task                                 */
+        //从就绪表中移除当前的任务
 		OSRdyTbl[y] &= (OS_PRIO) ~ OSTCBCur->OSTCBBitX;
 		if (OSRdyTbl[y] == 0u) {
 			OSRdyGrp &= (OS_PRIO) ~ OSTCBCur->OSTCBBitY;
 		}
-		OSTCBCur->OSTCBDly = ticks;	/* Load ticks in TCB                                  */
+		OSTCBCur->OSTCBDly = ticks;	/*保存延时参数  Load ticks in TCB                */
 		OS_EXIT_CRITICAL();
-		OS_Sched();	/* Find next task to run!                             */
+		OS_Sched();	/*切换任务 Find next task to run!                             */
 	}
 }
 
@@ -77,6 +78,7 @@ void OSTimeDly(INT32U ticks)
 * Description: This function is called to delay execution of the currently running task until some time
 *              expires.  This call allows you to specify the delay time in HOURS, MINUTES, SECONDS and
 *              MILLISECONDS instead of ticks.
+*               按照时分秒毫秒进行延时
 *
 * Arguments  : hours     specifies the number of hours that the task will be delayed (max. is 255)
 *              minutes   specifies the number of minutes (max. 59)
@@ -131,7 +133,7 @@ INT8U OSTimeDlyHMSM(INT8U hours, INT8U minutes, INT8U seconds, INT16U ms)
 	/* Compute the total number of clock ticks required.. */
 	/* .. (rounded to the nearest tick)                   */
 	ticks = ((INT32U) hours * 3600uL + (INT32U) minutes * 60uL + (INT32U) seconds) * OS_TICKS_PER_SEC
-	    + OS_TICKS_PER_SEC * ((INT32U) ms + 500uL / OS_TICKS_PER_SEC) / 1000uL;
+	    + OS_TICKS_PER_SEC * ((INT32U) ms + 500uL / OS_TICKS_PER_SEC) / 1000uL;    //精度为0.5个时钟
 	OSTimeDly(ticks);
 	return (OS_ERR_NONE);
 }
@@ -145,6 +147,7 @@ INT8U OSTimeDlyHMSM(INT8U hours, INT8U minutes, INT8U seconds, INT16U ms)
 *              OSTimeDly() or OSTimeDlyHMSM().  Note that you can call this function to resume a
 *              task that is waiting for an event with timeout.  This would make the task look
 *              like a timeout occurred.
+*              用来唤醒被OSTimeDly或者OSTimeDlyHMSM延时的任务，也可以用来唤醒被事件延时的任务
 *
 * Arguments  : prio                      specifies the priority of the task to resume
 *
@@ -161,7 +164,7 @@ INT8U OSTimeDlyResume(INT8U prio)
 {
 	OS_TCB *ptcb;
 #if OS_CRITICAL_METHOD == 3u	/* Storage for CPU status register      */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //使用第三种方式来开关中断，需要用cpu_sr来保存中断状态
 #endif
 
 
@@ -179,25 +182,25 @@ INT8U OSTimeDlyResume(INT8U prio)
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TASK_NOT_EXIST);	/* The task does not exist              */
 	}
-	if (ptcb->OSTCBDly == 0u) {	/* See if task is delayed               */
+	if (ptcb->OSTCBDly == 0u) {	/* 确保任务是有延时的 See if task is delayed               */
 		OS_EXIT_CRITICAL();
 		return (OS_ERR_TIME_NOT_DLY);	/* Indicate that task was not delayed   */
 	}
 
-	ptcb->OSTCBDly = 0u;	/* Clear the time delay                 */
-	if ((ptcb->OSTCBStat & OS_STAT_PEND_ANY) != OS_STAT_RDY) {
+	ptcb->OSTCBDly = 0u;	/*延时清0 Clear the time delay                 */
+	if ((ptcb->OSTCBStat & OS_STAT_PEND_ANY) != OS_STAT_RDY) {//如果任务是被事件延时，将其置为超时状态
 		ptcb->OSTCBStat &= ~OS_STAT_PEND_ANY;	/* Yes, Clear status flag               */
 		ptcb->OSTCBStatPend = OS_STAT_PEND_TO;	/* Indicate PEND timeout                */
-	} else {
+	} else {                                    //任务是被OSTimeDly或者OSTimeDlyHMSM延时，将其置为延时结束
 		ptcb->OSTCBStatPend = OS_STAT_PEND_OK;
 	}
-	if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) == OS_STAT_RDY) {	/* Is task suspended?                   */
-		OSRdyGrp |= ptcb->OSTCBBitY;	/* No,  Make ready                      */
+	if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) == OS_STAT_RDY) {	/*任务被挂起? Is task suspended?                   */
+		OSRdyGrp |= ptcb->OSTCBBitY;	/*没有，将其置于就绪态 No,  Make ready                      */
 		OSRdyTbl[ptcb->OSTCBY] |= ptcb->OSTCBBitX;
 		OS_EXIT_CRITICAL();
-		OS_Sched();	/* See if this is new highest priority  */
+		OS_Sched();	/*执行任务调度 See if this is new highest priority  */
 	} else {
-		OS_EXIT_CRITICAL();	/* Task may be suspended                */
+		OS_EXIT_CRITICAL();	/*如果任务被挂起，还需要OSTaskResume() Task may be suspended                */
 	}
 	return (OS_ERR_NONE);
 }
