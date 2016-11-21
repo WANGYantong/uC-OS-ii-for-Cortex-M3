@@ -1000,21 +1000,27 @@ void OS_Dummy(void)
 *
 * Description: This function is called by other uC/OS-II services and is used to ready a task that was
 *              waiting for an event to occur.
+*              某事件发生后，使得等待任务列表中优先级最高的任务HPT脱离等待，并置于就绪状态。
 *
 * Arguments  : pevent      is a pointer to the event control block corresponding to the event.
+*                          指向相应事件的事件控制块
 *
 *              pmsg        is a pointer to a message.  This pointer is used by message oriented services
 *                          such as MAILBOXEs and QUEUEs.  The pointer is not used when called by other
 *                          service functions.
+*                          消息指针，被消息邮箱或者消息队列用来传递消息，信号量、互斥信号量不需要.
 *
 *              msk         is a mask that is used to clear the status byte of the TCB.  For example,
 *                          OSSemPost() will pass OS_STAT_SEM, OSMboxPost() will pass OS_STAT_MBOX etc.
+*                          位屏蔽码，用于对TCB中的OSTCBStat相应的位清零，与所发生的事件类型相对应
 *
 *              pend_stat   is used to indicate the readied task's pending status:
-*
+*                          表明任务就绪的原因
 *                          OS_STAT_PEND_OK      Task ready due to a post (or delete), not a timeout or
 *                                               an abort.
+*                                               任务是由于事件释放而就绪
 *                          OS_STAT_PEND_ABORT   Task ready due to an abort.
+*                                               任务由于终止而就绪
 *
 * Returns    : none
 *
@@ -1032,7 +1038,7 @@ INT8U OS_EventTaskRdy(OS_EVENT * pevent, void *pmsg, INT8U msk, INT8U pend_stat)
 	OS_PRIO *ptbl;
 #endif
 
-
+//查找优先级最高的任务HPT
 #if OS_LOWEST_PRIO <= 63u
 	y = OSUnMapTbl[pevent->OSEventGrp];	/* Find HPT waiting for message                */
 	x = OSUnMapTbl[pevent->OSEventTbl[y]];
@@ -1051,23 +1057,26 @@ INT8U OS_EventTaskRdy(OS_EVENT * pevent, void *pmsg, INT8U msk, INT8U pend_stat)
 	}
 	prio = (INT8U) ((y << 4u) + x);	/* Find priority of task getting the msg       */
 #endif
+	ptcb = OSTCBPrioTbl[prio];	/*ptcb指向最高优先级的任务TCB Point to this task's OS_TCB                 */
 
-	ptcb = OSTCBPrioTbl[prio];	/* Point to this task's OS_TCB                 */
-	ptcb->OSTCBDly = 0u;	/* Prevent OSTimeTick() from readying task     */
+	ptcb->OSTCBDly = 0u;	/*防止OSTimeTick()对OSTCBDly进行递减操作，直接置0 Prevent OSTimeTick() from readying task     */
+//如果是消息队列或者消息邮箱调用，那么需要将相应的消息传递给HPT
 #if ((OS_Q_EN > 0u) && (OS_MAX_QS > 0u)) || (OS_MBOX_EN > 0u)
 	ptcb->OSTCBMsg = pmsg;	/* Send message directly to waiting task       */
 #else
 	pmsg = pmsg;		/* Prevent compiler warning if not used        */
 #endif
-	ptcb->OSTCBStat &= (INT8U) ~ msk;	/* Clear bit associated with event type        */
-	ptcb->OSTCBStatPend = pend_stat;	/* Set pend status of post or abort            */
+	ptcb->OSTCBStat &= (INT8U) ~ msk;	/* 将相应的OSTCBStat的位清零 Clear bit associated with event type        */
+	ptcb->OSTCBStatPend = pend_stat;	/* 将pend_stat赋给任务挂起状态字 Set pend status of post or abort            */
 	/* See if task is ready (could be susp'd)      */
+    //任务是否就绪?如果是，则加入就绪标识表
 	if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) == OS_STAT_RDY) {
 		OSRdyGrp |= ptcb->OSTCBBitY;	/* Put task in the ready to run list           */
 		OSRdyTbl[y] |= ptcb->OSTCBBitX;
 	}
-
+    //在任务等待列表中删除HPT任务
 	OS_EventTaskRemove(ptcb, pevent);	/* Remove this task from event   wait list     */
+    //????
 #if (OS_EVENT_MULTI_EN > 0u)
 	if (ptcb->OSTCBEventMultiPtr != (OS_EVENT **) 0) {	/* Remove this task from events' wait lists    */
 		OS_EventTaskRemoveMulti(ptcb, ptcb->OSTCBEventMultiPtr);
@@ -1085,6 +1094,7 @@ INT8U OS_EventTaskRdy(OS_EVENT * pevent, void *pmsg, INT8U msk, INT8U pend_stat)
 *
 * Description: This function is called by other uC/OS-II services to suspend a task because an event has
 *              not occurred.
+*              使任务进入等待某事件发生状态
 *
 * Arguments  : pevent   is a pointer to the event control block for which the task will be waiting for.
 *
@@ -1099,11 +1109,12 @@ void OS_EventTaskWait(OS_EVENT * pevent)
 	INT8U y;
 
 
-	OSTCBCur->OSTCBEventPtr = pevent;	/* Store ptr to ECB in TCB         */
+	OSTCBCur->OSTCBEventPtr = pevent;	/*将ECB的指针放入TCB中 Store ptr to ECB in TCB         */
 
-	pevent->OSEventTbl[OSTCBCur->OSTCBY] |= OSTCBCur->OSTCBBitX;	/* Put task in waiting list        */
+	pevent->OSEventTbl[OSTCBCur->OSTCBY] |= OSTCBCur->OSTCBBitX;	/*加入事件控制块的等待任务列表 Put task in waiting list        */
 	pevent->OSEventGrp |= OSTCBCur->OSTCBBitY;
 
+    //从任务就绪表中删除任务
 	y = OSTCBCur->OSTCBY;	/* Task no longer ready                              */
 	OSRdyTbl[y] &= (OS_PRIO) ~ OSTCBCur->OSTCBBitX;
 	if (OSRdyTbl[y] == 0u) {	/* Clear event grp bit if this was only task pending */
@@ -1230,6 +1241,7 @@ void OS_EventTaskRemoveMulti(OS_TCB * ptcb, OS_EVENT ** pevents_multi)
 *                                 INITIALIZE EVENT CONTROL BLOCK'S WAIT LIST
 *
 * Description: This function is called by other uC/OS-II services to initialize the event wait list.
+*              对等待任务列表进行初始化
 *
 * Arguments  : pevent    is a pointer to the event control block allocated to the event.
 *
@@ -1257,6 +1269,7 @@ void OS_EventWaitListInit(OS_EVENT * pevent)
 *                           INITIALIZE THE FREE LIST OF EVENT CONTROL BLOCKS
 *
 * Description: This function is called by OSInit() to initialize the free list of event control blocks.
+*              事件控制块队列初始化
 *
 * Arguments  : none
 *
@@ -1267,6 +1280,7 @@ void OS_EventWaitListInit(OS_EVENT * pevent)
 static void OS_InitEventList(void)
 {
 #if (OS_EVENT_EN) && (OS_MAX_EVENTS > 0u)
+//如果有多个事件控制块
 #if (OS_MAX_EVENTS > 1u)
 	INT16U ix;
 	INT16U ix_next;
@@ -1274,8 +1288,9 @@ static void OS_InitEventList(void)
 	OS_EVENT *pevent2;
 
 
-	OS_MemClr((INT8U *) & OSEventTbl[0], sizeof(OSEventTbl));	/* Clear the event table                   */
-	for (ix = 0u; ix < (OS_MAX_EVENTS - 1u); ix++) {	/* Init. list of free EVENT control blocks */
+	OS_MemClr((INT8U *) & OSEventTbl[0], sizeof(OSEventTbl));	/* 事件控制块队列全部置0 Clear the event table                   */
+    //通过for循环，初始化前9个事件控制块的Type,Ptr以及Name
+    for (ix = 0u; ix < (OS_MAX_EVENTS - 1u); ix++) {	/* Init. list of free EVENT control blocks */
 		ix_next = ix + 1u;
 		pevent1 = &OSEventTbl[ix];
 		pevent2 = &OSEventTbl[ix_next];
@@ -1285,14 +1300,17 @@ static void OS_InitEventList(void)
 		pevent1->OSEventName = (INT8U *) (void *) "?";	/* Unknown name                            */
 #endif
 	}
+    //初始化最后一个事件控制块的Type,Ptr和Name
 	pevent1 = &OSEventTbl[ix];
 	pevent1->OSEventType = OS_EVENT_TYPE_UNUSED;
 	pevent1->OSEventPtr = (OS_EVENT *) 0;
 #if OS_EVENT_NAME_EN > 0u
 	pevent1->OSEventName = (INT8U *) (void *) "?";	/* Unknown name                            */
 #endif
+    //OSEventFreeList指针指向第一块空闲的事件控制块
 	OSEventFreeList = &OSEventTbl[0];
 #else
+//如果只有一块事件控制块
 	OSEventFreeList = &OSEventTbl[0];	/* Only have ONE event control block       */
 	OSEventFreeList->OSEventType = OS_EVENT_TYPE_UNUSED;
 	OSEventFreeList->OSEventPtr = (OS_EVENT *) 0;

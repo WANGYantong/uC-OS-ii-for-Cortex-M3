@@ -351,14 +351,14 @@ typedef  INT16U   OS_PRIO;
 
 #if (OS_EVENT_EN) && (OS_MAX_EVENTS > 0u)
 typedef struct os_event {
-    INT8U    OSEventType;                    /* Type of event control block (see OS_EVENT_TYPE_xxxx)    */
-    void    *OSEventPtr;                     /* Pointer to message or queue structure                   */
-    INT16U   OSEventCnt;                     /* Semaphore Count (not used if other EVENT type)          */
-    OS_PRIO  OSEventGrp;                     /* Group corresponding to tasks waiting for event to occur */
-    OS_PRIO  OSEventTbl[OS_EVENT_TBL_SIZE];  /* List of tasks waiting for event to occur                */
+    INT8U    OSEventType;                    /* 事件类型Type of event control block (see OS_EVENT_TYPE_xxxx)    */
+    void    *OSEventPtr;                     /* 指向消息邮箱或消息队列的指针Pointer to message or queue structure */
+    INT16U   OSEventCnt;                     /* 信号量的计数器Semaphore Count (not used if other EVENT type)          */
+    OS_PRIO  OSEventGrp;                     /* 等待任务的组Group corresponding to tasks waiting for event to occur */
+    OS_PRIO  OSEventTbl[OS_EVENT_TBL_SIZE];  /* 等待任务列表List of tasks waiting for event to occur                */
 
 #if OS_EVENT_NAME_EN > 0u
-    INT8U   *OSEventName;
+    INT8U   *OSEventName;                   //事件名
 #endif
 } OS_EVENT;
 #endif
