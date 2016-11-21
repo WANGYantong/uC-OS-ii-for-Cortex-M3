@@ -608,6 +608,7 @@ void OSInit(void)
 * Description: This function is used to notify uC/OS-II that you are about to service an interrupt
 *              service routine (ISR).  This allows uC/OS-II to keep track of interrupt nesting and thus
 *              only perform rescheduling at the last nested ISR.
+*		 	   通知内核已经进入中断处理服务子程序
 *
 * Arguments  : none
 *
@@ -643,6 +644,7 @@ void OSIntEnter(void)
 * Description: This function is used to notify uC/OS-II that you have completed serviving an ISR.  When
 *              the last nested ISR has completed, uC/OS-II will call the scheduler to determine whether
 *              a new, high-priority task, is ready to run.
+*              通知内核系统已经退出了当前的中断服务子程序
 *
 * Arguments  : none
 *
@@ -658,26 +660,27 @@ void OSIntEnter(void)
 void OSIntExit(void)
 {
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //采用第三种方式来开关中断，使用一个局部变量cpu_sr来保存中断状态
 #endif
+
 
 
 
 	if (OSRunning == OS_TRUE) {
 		OS_ENTER_CRITICAL();
-		if (OSIntNesting > 0u) {	/* Prevent OSIntNesting from wrapping       */
+		if (OSIntNesting > 0u) {	/* 中断嵌套计数器大于0 Prevent OSIntNesting from wrapping       */
 			OSIntNesting--;
 		}
-		if (OSIntNesting == 0u) {	/* Reschedule only if all ISRs complete ... */
-			if (OSLockNesting == 0u) {	/* ... and not locked.                      */
-				OS_SchedNew();
-				OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];
-				if (OSPrioHighRdy != OSPrioCur) {	/* No Ctx Sw if current task is highest rdy */
+		if (OSIntNesting == 0u) {	/* 中断是否脱离所有嵌套 Reschedule only if all ISRs complete ... */
+			if (OSLockNesting == 0u) {	/* 且调度是否被锁定 ... and not locked.                      */
+				OS_SchedNew();          //找出准备就绪且最高的优先级
+				OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy]; //该优先级所对应的TCB
+				if (OSPrioHighRdy != OSPrioCur) {	/*找出的TCB是被中断的任务TCB么 No Ctx Sw if current task is highest rdy */
 #if OS_TASK_PROFILE_EN > 0u
 					OSTCBHighRdy->OSTCBCtxSwCtr++;	/* Inc. # of context switches to this task  */
 #endif
-					OSCtxSwCtr++;	/* Keep track of the number of ctx switches */
-					OSIntCtxSw();	/* Perform interrupt level ctx switch       */
+					OSCtxSwCtr++;	/* 任务切换计数器加1 Keep track of the number of ctx switches */
+					OSIntCtxSw();	/* 调动中断级任务切换函数 Perform interrupt level ctx switch       */
 				}
 			}
 		}
@@ -876,6 +879,7 @@ void OSStatInit(void)
 * Description: This function is used to signal to uC/OS-II the occurrence of a 'system tick' (also known
 *              as a 'clock tick').  This function should be called by the ticker ISR but, can also be
 *              called by a high priority task.
+*              节拍服务子程序:主要给每个OS_TCB中的时间延时项减一，直到等于0
 *
 * Arguments  : none
 *
@@ -890,17 +894,17 @@ void OSTimeTick(void)
 	BOOLEAN step;
 #endif
 #if OS_CRITICAL_METHOD == 3u	/* Allocate storage for CPU status register     */
-	OS_CPU_SR cpu_sr = 0u;
+	OS_CPU_SR cpu_sr = 0u;      //采用方式三来开关中断，需要cpu_sr来保存中断状态
 #endif
 
 
 
 #if OS_TIME_TICK_HOOK_EN > 0u
-	OSTimeTickHook();	/* Call user definable hook                     */
+	OSTimeTickHook();	/*调用用户编写的拓展函数 Call user definable hook                     */
 #endif
 #if OS_TIME_GET_SET_EN > 0u
 	OS_ENTER_CRITICAL();	/* Update the 32-bit tick counter               */
-	OSTime++;
+	OSTime++;               //累计时钟总数
 	OS_EXIT_CRITICAL();
 #endif
 	if (OSRunning == OS_TRUE) {
@@ -908,16 +912,16 @@ void OSTimeTick(void)
 		switch (OSTickStepState) {	/* Determine whether we need to process a tick  */
 		case OS_TICK_STEP_DIS:	/* Yes, stepping is disabled                    */
 			step = OS_TRUE;
-			break;
+			break;              //直接执行tick遍历OSTCBList
 
 		case OS_TICK_STEP_WAIT:	/* No,  waiting for uC/OS-View to set ...       */
 			step = OS_FALSE;	/*      .. OSTickStepState to OS_TICK_STEP_ONCE */
-			break;
+			break;              //直接return,不进行tick原本进行的代码
 
 		case OS_TICK_STEP_ONCE:	/* Yes, process tick once and wait for next ... */
 			step = OS_TRUE;	/*      ... step command from uC/OS-View        */
 			OSTickStepState = OS_TICK_STEP_WAIT;
-			break;
+			break;              //执行一次tick，下一次tick置为wait退出
 
 		default:	/* Invalid case, correct situation              */
 			step = OS_TRUE;
@@ -928,31 +932,32 @@ void OSTimeTick(void)
 			return;
 		}
 #endif
-		ptcb = OSTCBList;	/* Point at first TCB in TCB list               */
-		while (ptcb->OSTCBPrio != OS_TASK_IDLE_PRIO) {	/* Go through all TCBs in TCB list              */
+		ptcb = OSTCBList;	/*指向第一个TCB Point at first TCB in TCB list               */
+		while (ptcb->OSTCBPrio != OS_TASK_IDLE_PRIO) {	/*遍历所有的TCB,直到空闲任务 Go through all TCBs in TCB list   */
 			OS_ENTER_CRITICAL();
-			if (ptcb->OSTCBDly != 0u) {	/* No, Delayed or waiting for event with TO     */
+			if (ptcb->OSTCBDly != 0u) {	/*延时项是否为0 No, Delayed or waiting for event with TO     */
 				ptcb->OSTCBDly--;	/* Decrement nbr of ticks to end of delay       */
-				if (ptcb->OSTCBDly == 0u) {	/* Check for timeout                            */
-
-					if ((ptcb->OSTCBStat & OS_STAT_PEND_ANY) != OS_STAT_RDY) {
-						ptcb->OSTCBStat &= (INT8U) ~ (INT8U) OS_STAT_PEND_ANY;	/* Yes, Clear status flag   */
-						ptcb->OSTCBStatPend = OS_STAT_PEND_TO;	/* Indicate PEND timeout    */
-					} else {
-						ptcb->OSTCBStatPend = OS_STAT_PEND_OK;
+				if (ptcb->OSTCBDly == 0u) {	/*延时项减一后是否为0 Check for timeout                            */
+                                            //延时时间已到
+					if ((ptcb->OSTCBStat & OS_STAT_PEND_ANY) != OS_STAT_RDY) {//延时是等待事件引起的
+						ptcb->OSTCBStat &= (INT8U) ~ (INT8U) OS_STAT_PEND_ANY;	/*清楚事件标识 Yes, Clear status flag   */
+						ptcb->OSTCBStatPend = OS_STAT_PEND_TO;	/*等待超时 Indicate PEND timeout    */
+					} else {                                                //延时是OSTimeDly引起的
+						ptcb->OSTCBStatPend = OS_STAT_PEND_OK;              //延时结束了
 					}
 
-					if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) == OS_STAT_RDY) {	/* Is task suspended?       */
-						OSRdyGrp |= ptcb->OSTCBBitY;	/* No,  Make ready          */
+					if ((ptcb->OSTCBStat & OS_STAT_SUSPEND) == OS_STAT_RDY) {	/*任务不是被挂起函数挂起的? Is task suspended?       */
+						OSRdyGrp |= ptcb->OSTCBBitY;	/*确实不是，置为就绪态 No,  Make ready          */
 						OSRdyTbl[ptcb->OSTCBY] |= ptcb->OSTCBBitX;
 					}
 				}
 			}
-			ptcb = ptcb->OSTCBNext;	/* Point at next TCB in TCB list                */
+			ptcb = ptcb->OSTCBNext;	/*继续检查下一个TCB Point at next TCB in TCB list                */
 			OS_EXIT_CRITICAL();
 		}
 	}
 }
+
 
 /*$PAGE*/
 /*

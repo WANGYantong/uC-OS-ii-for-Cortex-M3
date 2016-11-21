@@ -656,3 +656,4 @@ INT8U OSMboxQuery(OS_EVENT * pevent, OS_MBOX_DATA * p_mbox_data)
 }
 #endif				/* OS_MBOX_QUERY_EN                         */
 #endif				/* OS_MBOX_EN                               */
+
