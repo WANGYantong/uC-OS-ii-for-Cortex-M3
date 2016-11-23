@@ -479,20 +479,30 @@ typedef struct os_mutex_data {
 
 #if OS_Q_EN > 0u
 typedef struct os_q {                   /* QUEUE CONTROL BLOCK                                         */
-    struct os_q   *OSQPtr;              /* Link to next queue control block in list of free blocks     */
-    void         **OSQStart;            /* Pointer to start of queue data                              */
-    void         **OSQEnd;              /* Pointer to end   of queue data                              */
-    void         **OSQIn;               /* Pointer to where next message will be inserted  in   the Q  */
-    void         **OSQOut;              /* Pointer to where next message will be extracted from the Q  */
-    INT16U         OSQSize;             /* Size of queue (maximum number of entries)                   */
-    INT16U         OSQEntries;          /* Current number of entries in the queue                      */
+    struct os_q   *OSQPtr;              /*在空闲队列控制块链表中连接下一个队列控制块指针，一旦建立了消息队列就不再使用*/
+                                        /* Link to next queue control block in list of free blocks     */
+    void         **OSQStart;            /*指向消息队列的指针数组的起始地址的指针，在使用消息队列之前必须定义该指针数组*/
+                                        /* Pointer to start of queue data                              */
+    void         **OSQEnd;              /*指向消息队列结束单元的下一个地址的指针，该指针使得消息队列构成一个循环的缓冲区*/
+                                        /* Pointer to end   of queue data                              */
+    void         **OSQIn;               /*指向消息队列中插入下一条消息的位置的指针*/
+                                        /* Pointer to where next message will be inserted  in   the Q  */
+    void         **OSQOut;              /*指向消息队列中下一个取出消息的位置的指针*/
+                                        /* Pointer to where next message will be extracted from the Q  */
+    INT16U         OSQSize;             /*消息队列中的总的单元数，最大为65536*/
+                                        /* Size of queue (maximum number of entries)                   */
+    INT16U         OSQEntries;          /*消息队列中当前的消息数量*/
+                                        /* Current number of entries in the queue                      */
 } OS_Q;
 
 
 typedef struct os_q_data {
-    void          *OSMsg;               /* Pointer to next message to be extracted from queue          */
-    INT16U         OSNMsgs;             /* Number of messages in message queue                         */
-    INT16U         OSQSize;             /* Size of message queue                                       */
+    void          *OSMsg;               /*如果消息队列为空，则为NULL指针，否则为.OSQOut所指向的内容*/
+                                        /* Pointer to next message to be extracted from queue          */
+    INT16U         OSNMsgs;             /*消息队列中的消息数，即.OSQEntries中的拷贝*/
+                                        /* Number of messages in message queue                         */
+    INT16U         OSQSize;             /*消息队列中的总容量*/
+                                        /* Size of message queue                                       */
     OS_PRIO        OSEventTbl[OS_EVENT_TBL_SIZE];  /* List of tasks waiting for event to occur         */
     OS_PRIO        OSEventGrp;          /* Group corresponding to tasks waiting for event to occur     */
 } OS_Q_DATA;
@@ -555,7 +565,7 @@ typedef struct os_tcb {
 #endif
 
 #if ((OS_Q_EN > 0u) && (OS_MAX_QS > 0u)) || (OS_MBOX_EN > 0u)
-    void            *OSTCBMsg;              /* 指向传递给消息邮箱或者消息队列的消息指针 Message received from OSMboxPost() or OSQPost() */
+    void            *OSTCBMsg;              /* 指向收到的消息邮箱或者消息队列的消息指针 Message received from OSMboxPost() or OSQPost() */
 #endif
 
 #if (OS_FLAG_EN > 0u) && (OS_MAX_FLAGS > 0u)
