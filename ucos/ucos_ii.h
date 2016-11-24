@@ -463,11 +463,11 @@ typedef struct os_mem_data {
 
 #if OS_MUTEX_EN > 0u
 typedef struct os_mutex_data {
-    OS_PRIO OSEventTbl[OS_EVENT_TBL_SIZE];  /* List of tasks waiting for event to occur                */
-    OS_PRIO OSEventGrp;                     /* Group corresponding to tasks waiting for event to occur */
-    BOOLEAN OSValue;                        /* Mutex value (OS_FALSE = used, OS_TRUE = available)      */
-    INT8U   OSOwnerPrio;                    /* Mutex owner's task priority or 0xFF if no owner         */
-    INT8U   OSMutexPIP;                     /* Priority Inheritance Priority or 0xFF if no owner       */
+    OS_PRIO OSEventTbl[OS_EVENT_TBL_SIZE];  /*互斥信号量中的等待表 List of tasks waiting for event to occur                */
+    OS_PRIO OSEventGrp;                     /*相应的等待组 Group corresponding to tasks waiting for event to occur */
+    BOOLEAN OSValue;                        /*互斥信号量当前的状态:可用或不可用 Mutex value (OS_FALSE = used, OS_TRUE = available)      */
+    INT8U   OSOwnerPrio;                    /*互斥信号量拥有者原来的优先级 Mutex owner's task priority or 0xFF if no owner         */
+    INT8U   OSMutexPIP;                     /*互斥信号量的PIP Priority Inheritance Priority or 0xFF if no owner       */
 } OS_MUTEX_DATA;
 #endif
 
@@ -516,9 +516,9 @@ typedef struct os_q_data {
 
 #if OS_SEM_EN > 0u
 typedef struct os_sem_data {
-    INT16U  OSCnt;                          /* Semaphore count                                         */
-    OS_PRIO OSEventTbl[OS_EVENT_TBL_SIZE];  /* List of tasks waiting for event to occur                */
-    OS_PRIO OSEventGrp;                     /* Group corresponding to tasks waiting for event to occur */
+    INT16U  OSCnt;                          /*保存信号量计数值 Semaphore count                                         */
+    OS_PRIO OSEventTbl[OS_EVENT_TBL_SIZE];  /*保存信号量等待表 List of tasks waiting for event to occur                */
+    OS_PRIO OSEventGrp;                     /*保存相应的组等待标志 Group corresponding to tasks waiting for event to occur */
 } OS_SEM_DATA;
 #endif
 
