@@ -573,7 +573,7 @@ void OSInit(void)
 	OS_InitEventList();	/* 事件控制块队列初始化 Initialize the free list of OS_EVENTs    */
 
 #if (OS_FLAG_EN > 0u) && (OS_MAX_FLAGS > 0u)
-	OS_FlagInit();		/* 标志控制块队列初始化 Initialize the event flag structures     */
+	OS_FlagInit();		/* 事件标志组队列初始化 Initialize the event flag structures     */
 #endif
 
 #if (OS_MEM_EN > 0u) && (OS_MAX_MEM_PART > 0u)

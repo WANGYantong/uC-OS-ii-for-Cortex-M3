@@ -385,24 +385,24 @@ typedef  INT32U   OS_FLAGS;
 #endif
 
 
-typedef struct os_flag_grp {                /* Event Flag Group                                        */
-    INT8U         OSFlagType;               /* Should be set to OS_EVENT_TYPE_FLAG                     */
-    void         *OSFlagWaitList;           /* Pointer to first NODE of task waiting on event flag     */
-    OS_FLAGS      OSFlagFlags;              /* 8, 16 or 32 bit flags                                   */
+typedef struct os_flag_grp {                /* 事件标志组数据结构 Event Flag Group                                        */
+    INT8U         OSFlagType;               /* 检验指针类型 Should be set to OS_EVENT_TYPE_FLAG                     */
+    void         *OSFlagWaitList;           /* 事件标志组的等待任务列表 Pointer to first NODE of task waiting on event flag     */
+    OS_FLAGS      OSFlagFlags;              /* 表明当前事件标识状态的位 8, 16 or 32 bit flags                                   */
 #if OS_FLAG_NAME_EN > 0u
-    INT8U        *OSFlagName;
+    INT8U        *OSFlagName;               //事件标志组的名称
 #endif
 } OS_FLAG_GRP;
 
 
 
-typedef struct os_flag_node {               /* Event Flag Wait List Node                               */
-    void         *OSFlagNodeNext;           /* Pointer to next     NODE in wait list                   */
-    void         *OSFlagNodePrev;           /* Pointer to previous NODE in wait list                   */
-    void         *OSFlagNodeTCB;            /* Pointer to TCB of waiting task                          */
-    void         *OSFlagNodeFlagGrp;        /* Pointer to Event Flag Group                             */
-    OS_FLAGS      OSFlagNodeFlags;          /* Event flag to wait on                                   */
-    INT8U         OSFlagNodeWaitType;       /* Type of wait:                                           */
+typedef struct os_flag_node {               /*事件标志节点 Event Flag Wait List Node                               */
+    void         *OSFlagNodeNext;           /*指向下一个节点 Pointer to next     NODE in wait list                   */
+    void         *OSFlagNodePrev;           /*指向前一个节点 Pointer to previous NODE in wait list                   */
+    void         *OSFlagNodeTCB;            /*指向等待任务的TCB Pointer to TCB of waiting task                          */
+    void         *OSFlagNodeFlagGrp;        /*反向指向事件标志组数据结构 Pointer to Event Flag Group                             */
+    OS_FLAGS      OSFlagNodeFlags;          /*表明该节点需要事件标志组中的哪几位事件标志 Event flag to wait on                                   */
+    INT8U         OSFlagNodeWaitType;       /*等待事件标志的类型 Type of wait:                                           */
                                             /*      OS_FLAG_WAIT_AND                                   */
                                             /*      OS_FLAG_WAIT_ALL                                   */
                                             /*      OS_FLAG_WAIT_OR                                    */
