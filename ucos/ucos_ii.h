@@ -432,25 +432,25 @@ typedef struct os_mbox_data {
 */
 
 #if (OS_MEM_EN > 0u) && (OS_MAX_MEM_PART > 0u)
-typedef struct os_mem {                   /* MEMORY CONTROL BLOCK                                      */
-    void   *OSMemAddr;                    /* Pointer to beginning of memory partition                  */
-    void   *OSMemFreeList;                /* Pointer to list of free memory blocks                     */
-    INT32U  OSMemBlkSize;                 /* Size (in bytes) of each block of memory                   */
-    INT32U  OSMemNBlks;                   /* Total number of blocks in this partition                  */
-    INT32U  OSMemNFree;                   /* Number of memory blocks remaining in this partition       */
+typedef struct os_mem {                   /*内存控制块数据结构 MEMORY CONTROL BLOCK                                      */
+    void   *OSMemAddr;                    /*指向内存分区起始地址的指针 Pointer to beginning of memory partition                  */
+    void   *OSMemFreeList;                /*指向下一个空闲内存控制块 Pointer to list of free memory blocks                     */
+    INT32U  OSMemBlkSize;                 /*内存分区中内存块的大小 Size (in bytes) of each block of memory                   */
+    INT32U  OSMemNBlks;                   /*内存分区中总的内存块的数量 Total number of blocks in this partition                  */
+    INT32U  OSMemNFree;                   /*内存分区中当前可以使用的空闲内存块的数量 Number of memory blocks remaining in this partition       */
 #if OS_MEM_NAME_EN > 0u
-    INT8U  *OSMemName;                    /* Memory partition name                                     */
+    INT8U  *OSMemName;                    /*内存分区名 Memory partition name                                     */
 #endif
 } OS_MEM;
 
 
 typedef struct os_mem_data {
-    void   *OSAddr;                    /* Pointer to the beginning address of the memory partition     */
-    void   *OSFreeList;                /* Pointer to the beginning of the free list of memory blocks   */
-    INT32U  OSBlkSize;                 /* Size (in bytes) of each memory block                         */
-    INT32U  OSNBlks;                   /* Total number of blocks in the partition                      */
-    INT32U  OSNFree;                   /* Number of memory blocks free                                 */
-    INT32U  OSNUsed;                   /* Number of memory blocks used                                 */
+    void   *OSAddr;                    /*内存分区起始地址的指针 Pointer to the beginning address of the memory partition     */
+    void   *OSFreeList;                /*指向空闲内存块链表的起始地址的指针 Pointer to the beginning of the free list of memory blocks   */
+    INT32U  OSBlkSize;                 /*每个内存块的大小 Size (in bytes) of each memory block                         */
+    INT32U  OSNBlks;                   /*内存分区中内存块的总数 Total number of blocks in the partition                      */
+    INT32U  OSNFree;                   /*空闲的内存块数目 Number of memory blocks free                                 */
+    INT32U  OSNUsed;                   /*正在使用的内存块数目 Number of memory blocks used                                 */
 } OS_MEM_DATA;
 #endif
 
